@@ -94,7 +94,7 @@ class Particle:
     @classmethod
     def from_tree(cls, tree, basename, **array_kwargs):
         def _branch(name):
-            return tree[f'{basename}/{name}_'].array(**array_kwargs)
+            return tree[f'{basename}.{name}_'].array(**array_kwargs)
         form = {
             m: _branch(m)
             for m in [
@@ -103,8 +103,8 @@ class Particle:
             ]
         }
         form.update({
-            'track' : Track.from_tree(tree, f'{basename}/track_', **array_kwargs),
-            'cluster' : Cluster.from_tree(tree, f'{basename}/cluster_', **array_kwargs),
+            'track' : Track.from_tree(tree, f'{basename}.track_', **array_kwargs),
+            'cluster' : Cluster.from_tree(tree, f'{basename}.cluster_', **array_kwargs),
             'p': _three_vector(_branch, 'p', ''),
             'p_corr': _three_vector(_branch, 'p', '_corr')
         })
@@ -116,7 +116,7 @@ class Vertex:
     @classmethod
     def from_tree(cls, tree, basename, **array_kwargs):
         def _branch(name):
-            return tree[f'{basename}/{name}_'].array(**array_kwargs)
+            return tree[f'{basename}.{name}_'].array(**array_kwargs)
         form = {
             m: _branch(m)
             for m in [
