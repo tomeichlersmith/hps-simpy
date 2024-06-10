@@ -7,6 +7,9 @@ If there is an 'mc' branch in the input tree,
 they are read in as well and formed into a branch of MCParticles.
 """
 
+from dataclasses import dataclass
+
+
 import uproot
 import awkward as ak
 
@@ -166,3 +169,31 @@ class Event:
 def load_events(fp, tree_name = 'preselection', **array_kwargs):
     with uproot.open(fp) as f:
         return Event.from_tree(f[tree_name], **array_kwargs)
+
+
+@dataclass
+class load_event_chunks:
+    data_frac: float = 0.10
+    step_size: int = 10_000
+    min_steps_to_chunk: float = 2.0
+
+    
+    def __call__(self, fp):
+        with uproot.open(fp) as f:
+            t = f['preselection']
+
+        num_entries = t.num_entries
+
+        # only look at first fraction of data
+        if fp.stem.startswith('data-'):
+            num_entries = int(num_entries*self.data_frac)
+
+        if num_entries < self.min_steps_to_chunk*self.step_size:
+            yield Event.from_tree(t, entry_stop = num_entries)
+        else:
+            for entry_start in range(0, num_entries, self.step_size):
+                yield Event.from_tree(
+                    t,
+                    entry_start = entry_start,
+                    entry_stop = min(entry_start + self.step_size, num_entries)
+                )
