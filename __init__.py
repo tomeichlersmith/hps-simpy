@@ -3,6 +3,7 @@
 from . import mfsa
 from . import schema
 from . import plot
+from . import lumi
 
 from pathlib import Path
 
