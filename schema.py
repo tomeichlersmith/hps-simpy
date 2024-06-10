@@ -166,9 +166,24 @@ class Event:
         return ak.zip(form, depth_limit=1, with_name=cls.__name__)
 
 
+def sample_from_filepath(fp):
+    """assume file names have mutually-exclusive keys signalling sample"""
+    for opt in ['wab','simp','rad','tritrig','data']:
+        if opt in fp.stem:
+            return opt
+
+
+def metadata_from_filepath(fp):
+    md = { 'sample' : sample_from_filepath(fp) }
+    if md['sample'] == 'simp':
+        md['mass'] = int(fp.stem.split('_')[1])
+    return md
+
+
 def load_events(fp, tree_name = 'preselection', **array_kwargs):
     with uproot.open(fp) as f:
-        return Event.from_tree(f[tree_name], **array_kwargs)
+        arr = Event.from_tree(f[tree_name], **array_kwargs)
+    arr.attrs = metadata_from_filepath(fp)
 
 
 @dataclass
@@ -189,11 +204,15 @@ class load_event_chunks:
             num_entries = int(num_entries*self.data_frac)
 
         if num_entries < self.min_steps_to_chunk*self.step_size:
-            yield Event.from_tree(t, entry_stop = num_entries)
+            arr = Event.from_tree(t, entry_stop = num_entries)
+            arr.attrs = metadata_from_filepath(fp)
+            yield arr
         else:
             for entry_start in range(0, num_entries, self.step_size):
-                yield Event.from_tree(
+                arr = Event.from_tree(
                     t,
                     entry_start = entry_start,
                     entry_stop = min(entry_start + self.step_size, num_entries)
                 )
+                arr.attrs = metadata_from_filepath(fp)
+                yield arr
