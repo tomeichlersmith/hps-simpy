@@ -184,6 +184,7 @@ def load_events(fp, tree_name = 'preselection', **array_kwargs):
     with uproot.open(fp) as f:
         arr = Event.from_tree(f[tree_name], **array_kwargs)
     arr.attrs = metadata_from_filepath(fp)
+    return arr
 
 
 @dataclass
