@@ -12,15 +12,6 @@ import sys
 from types import ModuleType, FunctionType
 from gc import get_referents
 
-try:
-    if profile:
-        #able to call profile function so we are all good
-        pass
-except NameError:
-    # no profile decorator, define a identity wrapper
-    def profile(f):
-        return f
-
 
 def _quiet_wrapper(pool_iter, **kwargs):
     return pool_iter
@@ -39,7 +30,6 @@ class WorkFunction:
     processor: Callable
     preprocess: Optional[Callable] = None
 
-    @profile
     def __call__(self, item):
         if self.preprocess is not None:
             out = accumulate(
@@ -51,19 +41,6 @@ class WorkFunction:
         return out
 
 
-    @profile
-    def with_pause(self, item):
-        """This function wraps the actual work with 1s sleeps on either side.
-        It is helpful for debugging any kind of performance issues so that you
-        can visually see where different items start and end processing.
-        """
-        time.sleep(1)
-        out = self.__call__(item)
-        time.sleep(1)
-        return out
-
-
-@profile
 def run(
     processor: Callable,
     work_items: Iterable,
