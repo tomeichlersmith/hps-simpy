@@ -17,15 +17,18 @@ def full_sample_list():
     ]
 
 
-def test_sample_list():
+def test_sample_list(sample_type = None):
     """one file from each sample type"""
-    return {
+    test_samples = {
         'simp': data_d / 'mass_100_hadd-simp-beam.root',
         'wab': data_d / 'wab-beam-hadd-100files_0.root',
         'rad': data_d / 'rad_beam_pass4b_tuples_100files_0.root',
         'tritrig': data_d / 'tritrig-beam-hadd-100files_0.root',
         'data': data_d / 'data-physrun2016-pass4kf-recon-5.2.1-run-007800.root'
     }
+    if sample_type is None:
+        return test_samples
+    return test_samples[sample_type]
 
 
 def run(
