@@ -7,18 +7,29 @@ from . import lumi
 
 from pathlib import Path
 
-data_d = Path('/sdf/group/hps/user-data/eichl008/simp-l1l2/analysis')
+def get_data_dir():
+    import socket
+    hn = socket.gethostname()
+    if hn.endswith('slac.stanford.edu'):
+        return Path('/sdf/group/hps/user-data/eichl008/simp-l1l2/analysis')
+    elif hn.endswith('zebra01.spa.umn.edu'):
+        return Path('/export/scratch/users/eichl008/hps/simp-l1l2/data')
+    else:
+        raise ValueError('Unrecognized host {hn}')
+
 
 def full_sample_list():
+    data_d = get_data_dir()
     return [
         fp
-        for fp in data_d.iterdir()
+        for fp in full_sample_list.data_d.iterdir()
         if fp.suffix == '.root'
     ]
 
 
 def test_sample_list(sample_type = None):
     """one file from each sample type"""
+    data_d = get_data_dir()
     test_samples = {
         'simp': data_d / 'mass_100_hadd-simp-beam.root',
         'wab': data_d / 'wab-beam-hadd-100files_0.root',
