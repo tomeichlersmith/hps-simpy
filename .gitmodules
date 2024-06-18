@@ -1,0 +1,4 @@
+[submodule "exclusion"]
+	path = exclusion
+	url = git@github.com:tomeichlersmith/hps-exclusion
+	branch = main
