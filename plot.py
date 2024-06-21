@@ -2,11 +2,6 @@
 
 import numpy as np
 
-# since we are in a container that redefines HOME, we need to explicitly
-# tell MPL where to store its config and cache
-import os
-os.environ['MPLCONFIGDIR'] = '/sdf/home/e/eichl008/.config/matplotlib'
-
 import matplotlib as mpl
 import mplhep
 import mplhep.error_estimation
