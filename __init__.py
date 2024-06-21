@@ -35,7 +35,7 @@ def test_sample_list(sample_type = None):
         'wab': data_d / 'wab-beam-hadd-100files_0.root',
         'rad': data_d / 'rad_beam_pass4b_tuples_100files_0.root',
         'tritrig': data_d / 'tritrig-beam-hadd-100files_0.root',
-        'data': data_d / 'data-physrun2016-pass4kf-recon-5.2.1-run-007800.root'
+        'data': data_d / 'data-physrun2016-pass4kf-recon-5.2.1-run-007800-part-0.root'
     }
     if sample_type is None:
         return test_samples
