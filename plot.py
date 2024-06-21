@@ -1,4 +1,5 @@
 """various plotting helpers"""
+from pathlib import Path
 
 import numpy as np
 
@@ -50,3 +51,30 @@ def show(
     else:
         plt.clf()
 
+
+def _from_options(options, *, run = None, quiet = False):
+    # sort options by last modified time
+    options.sort(key = lambda f: f.stat().st_mtime)
+    if run is None:
+        run = options[-1]
+    elif isinstance(run, int):
+        run = options[run]
+    elif isinstance(run, str):
+        match = [ o for o in options if o.stem == run ]
+        if len(match) == 0:
+            raise ValueError(f'No run matching {run} in {options}.')
+        elif len(match) > 1:
+            raise ValueError(f'More than one matching {run} in {options}.')
+        run = match[0]
+    elif not isinstance(run, Path):
+        raise TypeError(f'{run} is not None, an int, str, or Path.')
+    if not quiet:
+        print(f'Selected {run}')
+    return run
+
+
+def from_dir(dir, *, suffix = 'pkl', run = None):
+    return _from_options(
+        [ fp for fp in Path(dir).iterdir() if fp.suffix == f'.{suffix}' ],
+        run = run
+    )
