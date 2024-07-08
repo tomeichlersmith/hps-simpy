@@ -2,3 +2,4 @@
 
 from . import plot
 from . import lumi
+from ._exclusion_estimate import exclusion_estimate
