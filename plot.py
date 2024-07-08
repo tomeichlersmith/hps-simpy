@@ -37,9 +37,12 @@ def show(
     ax = None,
     filename = None,
     display = True,
-    exp_loc = 0
+    exp_loc = 0,
+    lumi = 10.7
 ):
-    mplhep.label.lumitext('$10.7 pb^{-1}$', ax = ax)
+    if isinstance(lumi, (float,int)):
+        lumi = f'${lumi} '+r'pb^{-1}$'
+    mplhep.label.lumitext(lumi, ax = ax)
     mplhep.label.exp_text('HPS','Internal','2016', loc=exp_loc, ax=ax)
     if filename is not None:
         plt.savefig(
