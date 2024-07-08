@@ -5,12 +5,18 @@ import operator
 
 
 class SelectionSet:
-    def __init__(self, **selections):
-        self.__dict__ = selections
+    def __init__(self, aliases = {}, **selections):
+        self._selections = selections
+        self._aliases = aliases
 
-
-    def all(self):
-        return self.__call__(*list(self.__dict__.keys()))
+    
+    def __getattr__(self, name):
+        if name in self._aliases:
+            return functools.reduce(operator.and_, (self._selections[n] for n in self._alises[name]))
+        elif name in self._selections:
+            return self._selections[name]
+        else:
+            return super().__getattr__(self, name)
 
 
     def __call__(self, *names):
