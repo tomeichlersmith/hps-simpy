@@ -9,3 +9,18 @@ def get_data_dir():
         return Path('/sdf/group/hps/user-data/eichl008/simp-l1l2/analysis')
     else:
         raise ValueError(f'Unrecognized host {hn}')
+
+
+def get_true_vd_z_file():
+    # on my personal computers that don't have the full dataset
+    # but I still want to do the downstream statistical analyses
+    attempt = Path(__file__).resolve().parent.parent / 'data' / 'true-vd-z-pre-readout.root'
+    if attempt.is_file():
+        return attempt
+    
+    # on S3DF, keep the file in the parent directory of the analysis tuples
+    attempt = get_data_dir() / '..' / 'true-vd-z-pre-readout.root'
+    if attempt.is_file():
+        return attempt
+    
+    raise ValueError('Unable to find true-vd-z file automatically.')
