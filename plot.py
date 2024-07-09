@@ -55,6 +55,23 @@ def show(
         plt.clf()
 
 
+def plt_mass_by_eps2(
+    mass,
+    eps2,
+    arr,
+    label,
+    **kwargs
+):
+    plt.figure(figsize=(12,10))
+    ax = plt.gca()
+    im = ax.pcolormesh(mass, eps2, arr.T, **kwargs)
+    ax.set_yscale('log')
+    ax.set_ylabel(r'$\epsilon^2$')
+    ax.set_xlabel('Invariant Mass / MeV')
+    cbar = plt.colorbar(im, label=label)
+    return im, cbar
+
+
 def _from_options(options, *, run = None, quiet = False):
     # sort options by last modified time
     options.sort(key = lambda f: f.stat().st_mtime)
