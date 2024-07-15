@@ -44,7 +44,7 @@ def _full_sample_list(data_filter = None):
     from collections import defaultdict
     samples = defaultdict(dict)
     for fp in data_d.iterdir():
-        if fp.suffix != '.root':
+        if fp.suffix != '.root' or fp.stem == 'true-vd-z-pre-readout':
             continue
         if data_filter(fp):
             samples['data'][fp] = 'preselection'
