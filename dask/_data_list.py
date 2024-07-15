@@ -22,11 +22,11 @@ def _is_data(fp):
 
 
 def _data_10pct(fp):
-    return _is_data(fp) and fp.stem.endswith('part-0')
+    return fp.stem.endswith('part-0')
 
 
 def _golden_run(fp):
-    return _is_data(fp) and 'run-007800' in fp.stem
+    return 'run-007800' in fp.stem
 
 
 _data_filters = {
@@ -46,8 +46,9 @@ def _full_sample_list(data_filter = None):
     for fp in data_d.iterdir():
         if fp.suffix != '.root' or fp.stem == 'true-vd-z-pre-readout':
             continue
-        if data_filter(fp):
-            samples['data'][fp] = 'preselection'
+        if _is_data(fp):
+            if data_filter(fp):
+                samples['data'][fp] = 'preselection'
         elif fp.stem.endswith('simp-beam'):
             m = fp.stem.split('_')[1]
             samples[f'simp{m}'][fp] = 'preselection'
@@ -62,8 +63,8 @@ def _full_sample_list(data_filter = None):
     return samples.items()
 
 
-def sample_list(*, test = True, data_filter = None):
+def sample_list(*, test = True, **kwargs):
     if test:
         return _test_sample_list()
     else:
-        return _full_sample_list()
+        return _full_sample_list(**kwargs)
