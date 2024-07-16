@@ -52,7 +52,11 @@ class deduce_y0_edges_from_y0_cut:
         # accumulate mass counts along /flipped/ axis (accumulate and flip)
         # find the index for the entry that first goes above 1000 (argmax over >)
         # select bin in this index _from the end_ (since we accumulated on the flip)
-        i_y0_floor = -np.argmax(np.add.accumulate(np.flip(self.data[sr_mass,:].values()))>1000)
+        # we need to subtract one to get to the bin that is above 1000
+        i_y0_floor = (
+            len(self.data.axes[1].centers) - 1 -
+            np.argmax(np.add.accumulate(np.flip(self.data[sr_mass,:].values()))>1000)
+        )
         return self.data.axes[1].centers[i_y0_floor], y0_cut_v
 
 
@@ -234,7 +238,7 @@ def show_with_calculation(
     plt.annotate(
         '\n'.join(extra_notes+[
             r'$m_\text{true} = '+f'{mass:.0f}$ MeV',
-            ' '.join(f'{name} = {val:.0f}' for name, val in zip('ABCDE', (a,b,c,d,e))),
+            ' '.join(f'{name} = {val:.0f}' for name, val in zip('AEBDC', (a,e,b,d,c))),
             r'$F_\text{exp} = C\times(\max(A+E,0.4)/(B+D)) = '+f"{f_exp:.1f}\pm{f_unc:.1f}$",
             r'$F_\text{obs} = '+f'{f_obs:.0f}$',
             f"P Value = {p_value:.1e}"
