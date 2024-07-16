@@ -9,6 +9,8 @@ from tqdm import tqdm
 import hist
 
 from .exclusion.production.mass_resolution import alic_2016_simps as default_mass_resolution
+from .plot import show as _show
+from .plot import plt
 
 
 def _process_edges_arg(edges):
@@ -135,4 +137,114 @@ def invm_y0(
         )
 
     return search_result
-        
+
+
+def show(
+    result, *,
+    extras = None,
+    **show_kw
+):
+    """Given a array of search results, plot them showing the observed and expected
+    in an upper panel and the p-value from the toys in a lower panel"""
+    
+    fig, (raw, pval) = plt.subplots(
+        nrows=2,
+        height_ratios = [2,1],
+        gridspec_kw = dict(
+            hspace = 0.05
+        ),
+        sharex = 'col'
+    )
+    
+    raw.errorbar(
+        result['mass'], result['f_exp'], yerr = result['f_unc'],
+        marker='o',
+        linewidth=0, elinewidth=2,
+        color='tab:blue', label='Expected'
+    )
+    raw.scatter(result['mass'], result['f_obs'], color='black', label='Observed')
+    raw.legend(title='SR L1L1')
+    raw.set_ylabel('Events')
+    
+    pval.scatter(result['mass'], result['p_value'], color='black')
+    pval.set_yscale('log')
+    pval.set_xlabel('Invariant Mass / MeV')
+
+    approximate_number_of_independent_search_regions = (
+        (np.max(result['mass'])-np.min(result['mass']))
+        /np.mean(default_mass_resolution(result['mass']))
+    )
+    
+    for p in 1-np.array([0.6827,0.9545,0.997]):
+        pval.axhline(p, linestyle=':', color='gray')
+        pval.axhline(p/approximate_number_of_independent_search_regions,
+                     linestyle=':', color='tab:red')
+    if extras is not None:
+        extras(fig, (raw, pval))
+    _show(ax=raw,**show_kw)
+
+
+def show_with_calculation(
+    mass, result, *,
+    extra_notes = [],
+    **show_kw
+):
+    """Show the InvM vs min-y0 histogram along with a specific search calculation
+    drawn on top
+
+    Example
+    -------
+
+        invm_miny0_h.plot(norm='log', cbarpad=0.4)
+        show_with_calculation(60, result_from_search)
+    """
+    (
+        mass, y0_floor, y0_cut,
+        invm_left, invm_sr_left,
+        invm_sr_right, invm_right,
+        a, b, c, d, e,
+        ae, bd,
+        f_exp, f_unc, f_obs, p_value 
+    ) = result[result['mass']==mass][0]
+
+    for x in [invm_left, invm_sr_left, invm_sr_right, invm_right]:
+        plt.plot(3*[x], [y0_floor, y0_cut, 2], color='tab:red')
+    
+    for y in [y0_floor, y0_cut]:
+        plt.plot([invm_left, invm_right], 2*[y], color='tab:red')
+    
+    for name, xy in zip(
+        'ABCDEF',
+        [
+            (0.5*(invm_left+invm_sr_left), y0_cut),
+            (0.5*(invm_left+invm_sr_left), y0_floor),
+            (0.5*(invm_sr_left+invm_sr_right), y0_floor),
+            (0.5*(invm_right+invm_sr_right), y0_floor),
+            (0.5*(invm_right+invm_sr_right), y0_cut),
+            (0.5*(invm_sr_left+invm_sr_right), y0_cut),            
+        ],
+        strict=True
+    ):
+        plt.annotate(
+            f'{name}', xy=xy,
+            ha='center', va='bottom',
+            color='tab:red'
+        )
+    
+    plt.annotate(
+        '\n'.join(extra_notes+[
+            r'$m_\text{true} = '+f'{mass:.0f}$ MeV',
+            ' '.join(f'{name} = {val:.0f}' for name, val in zip('ABCDE', (a,b,c,d,e))),
+            r'$F_\text{exp} = C\times(\max(A+E,0.4)/(B+D)) = '+f"{f_exp:.1f}\pm{f_unc:.1f}$",
+            r'$F_\text{obs} = '+f'{f_obs:.0f}$',
+            f"P Value = {p_value:.1e}"
+        ]),
+        xy=(0.95,0.95),
+        xycoords='axes fraction',
+        ha='right',
+        va='top',
+        color='black',
+        bbox = dict(fill=True, color='white', alpha=0.76)
+    )
+
+    _show(**show_kw)
