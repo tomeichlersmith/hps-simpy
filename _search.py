@@ -1,65 +1,14 @@
 """basic search looking for excess of events"""
 
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import Callable
 
 import numpy as np
 from tqdm import tqdm
 
 import hist
 
-def _slices_from_edges(edges):
-    if len(edges) != 3:
-        raise ValueError('Edges need to be fully defined. Use None if you wish to specify one edge to be to +/- infinity')
-    return (
-        slice(hist.loc(edges[0]),hist.loc(edges[1]),sum),
-        slice(hist.loc(edges[1]),hist.loc(edges[2]),sum)
-    )
-
-
-ABCDSearchResult = namedtuple(
-    'ABCDSearchResult',
-    [
-        'a', 'b', 'c',
-        'd_exp', 'd_unc', 'd_obs',
-        'p_value',
-        'n_trials'
-    ]
-)
-
-
-def abcd(
-    data,
-    x_edges,
-    y_edges,
-    *,
-    n_trials = 10_000
-):
-    low_x, high_x = _slices_from_edges(x_edges)
-    low_y, high_y = _slices_from_edges(y_edges)
-    a, b, c, d_obs = (
-        data[high_x,high_y],
-        data[high_x,low_y],
-        data[low_x,low_y],
-        data[low_x,high_y]
-    )
-    d_exp = c*(a/b)
-
-    a_s = np.random.poisson(lam=a, size=n_trials)
-    b_s = np.random.normal(loc=b, scale=np.sqrt(b), size=n_trials)
-    c_s = np.random.normal(loc=c, scale=np.sqrt(c), size=n_trials)
-    d_s = np.random.poisson(lam=c_s*(a_s/b_s))
-    d_unc = np.std(d_s)
-    p_value = np.sum(d_s > d_obs)/n_trials
-    return ABCDSearchResult(
-        a = a,
-        b = b,
-        c = c,
-        d_exp = d_exp,
-        d_unc = d_unc,
-        d_obs = d_obs,
-        p_value = p_value,
-        n_trials = n_trials
-    )
+from .exclusion.production.mass_resolution import alic_2016_simps as default_mass_resolution
 
 
 def _process_edges_arg(edges):
@@ -70,14 +19,53 @@ def _process_edges_arg(edges):
     return edges
 
 
+def _edges_to_slices(*edges, share = True):
+    if share:
+        return (
+            slice(hist.loc(lo), hist.loc(up), sum)
+            for lo, up in zip(edges, edges[1:])
+        )
+
+    if len(edges) % 2 == 1:
+        raise ValueError('If not sharing edges, the number of edges must be even!')
+    
+    return (
+        slice(hist.loc(edges[i]), hist.loc(edges[i+1]), sum)
+        for i in range(0, len(edges), 2)
+    )
+
+
+@dataclass
+class deduce_y0_edges_from_y0_cut:
+    data: hist.Hist
+    window: float
+    y0_cut_f: Callable
+    mass_resolution: Callable = default_mass_resolution
+      
+
+    def __call__(self, mass):
+        sigma_m = self.mass_resolution(mass)
+        sr_mass, = _edges_to_slices(mass-self.window*sigma_m, mass+self.window*sigma_m)
+        y0_cut_v = self.y0_cut_f(mass)
+        # accumulate mass counts along /flipped/ axis (accumulate and flip)
+        # find the index for the entry that first goes above 1000 (argmax over >)
+        # select bin in this index _from the end_ (since we accumulated on the flip)
+        i_y0_floor = -np.argmax(np.add.accumulate(np.flip(self.data[sr_mass,:].values()))>1000)
+        return self.data.axes[1].centers[i_y0_floor], y0_cut_v
+
+
 def invm_y0(
     mass,
     data,
     *,
-    y0_edges = (0.2,1.0),
+    y0_edges = (0.1,1.0),
     invm_edges = (2,6),
-    n_trials = 10_000
+    n_trials = 10_000,
+    apply_mass_resolution = True
 ):
+    """data is histogram of counts in InvM vs Min-y0 space"""
+
+    # convert static tuples into functions that are callable by m
     y0_edges = _process_edges_arg(y0_edges)
     invm_edges = _process_edges_arg(invm_edges)
 
@@ -86,32 +74,64 @@ def invm_y0(
         mass.shape,
         np.nan,
         dtype = [
-            ('mass', float),
-            ('y0_floor', float),
-            ('y0_cut', float),
-            ('window', float),
-            ('sideband', float),
-            *(
-                (field, float)
-                for field in ABCDSearchResult._fields
-            )
+            (field, float)
+            for field in [
+                'mass', 'y0_floor', 'y0_cut',
+                'invm_left', 'invm_sr_left',
+                'invm_sr_right', 'invm_right',
+                'a', 'b', 'c', 'd', 'e', 'ae', 'bd',
+                'f_exp', 'f_unc', 'f_obs', 'p_value'
+            ]
         ]
     )
 
     for i, m in tqdm(enumerate(mass), total=len(mass)):
-        data_h = data(m)
         y0_floor, y0_cut = y0_edges(m)
         window, sideband = invm_edges(m)
+        if apply_mass_resolution:
+            sigma_m = default_mass_resolution(m)
+            window *= sigma_m
+            sideband *= sigma_m
 
+        (
+            low_mass_sideband,
+            sr_mass,
+            high_mass_sideband
+        ) = _edges_to_slices(m-sideband,m-window,m+window,m+sideband)
+
+        (
+            low_y0_sideband,
+            sr_y0
+        ) = _edges_to_slices(y0_floor, y0_cut, None)
+
+        a, b, c, d, e, f_obs = (
+            data[low_mass_sideband, sr_y0],
+            data[low_mass_sideband, low_y0_sideband],
+            data[sr_mass, low_y0_sideband],
+            data[high_mass_sideband, low_y0_sideband],
+            data[high_mass_sideband, sr_y0],
+            data[sr_mass, sr_y0]
+        )
+
+        ae = max(a+e, 0.4)
+        bd = b+d
+        
+        f_exp = c*(ae/bd)
+
+        ae_s = np.random.poisson(lam=ae, size=n_trials)
+        bd_s = np.random.normal(loc=bd, scale=np.sqrt(bd), size=n_trials)
+        c_s = np.random.normal(loc=c, scale=np.sqrt(c), size=n_trials)
+        f_s = np.random.poisson(lam=c_s*(ae_s/bd_s))
+        f_unc = np.std(f_s)
+        p_value = np.sum(f_s > f_obs)/n_trials
+    
         search_result[i] = (
             m,
             y0_floor, y0_cut,
-            window, sideband,
-            *abcd(
-                data_h,
-                (0.0, window, sideband),
-                (y0_floor, y0_cut, None)
-            )
+            m-sideband, m-window, m+window, m+sideband,
+            a, b, c, d, e,
+            ae, bd,
+            f_exp, f_unc, f_obs, p_value
         )
 
     return search_result
