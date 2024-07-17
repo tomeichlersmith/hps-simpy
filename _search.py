@@ -56,7 +56,7 @@ class deduce_y0_edges_from_y0_cut:
         i_y0_floor = (
             len(self.data.axes[1].centers) - 1 -
             np.argmax(np.add.accumulate(np.flip(self.data[sr_mass,:].values()))>1000)
-        )
+        ) if self.data[sr_mass,sum] > 1000 else 0
         return self.data.axes[1].centers[i_y0_floor], y0_cut_v
 
 
