@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 import hist
+from mplhep.error_estimation import poisson_interval
 
 from .exclusion.production.mass_resolution import alic_2016_simps as default_mass_resolution
 from .plot import show as _show
@@ -67,10 +68,14 @@ def invm_y0(
     y0_edges = (0.1,1.0),
     invm_edges = (2,6),
     n_trials = 10_000,
-    apply_mass_resolution = True
+    apply_mass_resolution = True,
 ):
     """data is histogram of counts in InvM vs Min-y0 space"""
 
+    # coverage defining size of envelope around median that should
+    # define the lower/upper limits of the expected interval
+    coverage = 0.6827 # 1 standard deviation around mean of normal
+    
     # convert static tuples into functions that are callable by m
     y0_edges = _process_edges_arg(y0_edges)
     invm_edges = _process_edges_arg(invm_edges)
@@ -86,7 +91,7 @@ def invm_y0(
                 'invm_left', 'invm_sr_left',
                 'invm_sr_right', 'invm_right',
                 'a', 'b', 'c', 'd', 'e', 'ae', 'bd',
-                'f_exp', 'f_unc', 'f_obs', 'p_value'
+                'f_exp', 'f_low', 'f_up', 'f_obs', 'p_value'
             ]
         ]
     )
@@ -128,7 +133,13 @@ def invm_y0(
         bd_s = np.random.normal(loc=bd, scale=np.sqrt(bd), size=n_trials)
         c_s = np.random.normal(loc=c, scale=np.sqrt(c), size=n_trials)
         f_s = np.random.poisson(lam=c_s*(ae_s/bd_s))
-        f_unc = np.std(f_s)
+        f_lo, f_up = np.quantile(f_s, [0.5-coverage/2, 0.5+coverage/2])
+        if f_up < f_exp:
+            # this only happens in the case where ae has been set to 0.4
+            # and thus the distribution is strongly peaked at 0
+            # (so strongly >68% of the trials have F==0)
+            # using the std dev is a conservate estimate that isn't far off
+            f_up = f_exp+np.std(f_s)
         p_value = np.sum(f_s > f_obs)/n_trials
     
         search_result[i] = (
@@ -137,7 +148,7 @@ def invm_y0(
             m-sideband, m-window, m+window, m+sideband,
             a, b, c, d, e,
             ae, bd,
-            f_exp, f_unc, f_obs, p_value
+            f_exp, f_lo, f_up, f_obs, p_value
         )
 
     return search_result
@@ -159,9 +170,15 @@ def show(
         ),
         sharex = 'col'
     )
-    
+
     raw.errorbar(
-        result['mass'], result['f_exp'], yerr = result['f_unc'],
+        result['mass'], result['f_exp'],
+        yerr = np.vstack(
+            (
+                result['f_exp']-result['f_low'],
+                result['f_up']-result['f_exp']
+            )
+        ),
         marker='o',
         linewidth=0, elinewidth=2,
         color='tab:blue', label='Expected'
@@ -208,7 +225,7 @@ def show_with_calculation(
         invm_sr_right, invm_right,
         a, b, c, d, e,
         ae, bd,
-        f_exp, f_unc, f_obs, p_value 
+        f_exp, f_lo, f_up, f_obs, p_value 
     ) = result[result['mass']==mass][0]
 
     for x in [invm_left, invm_sr_left, invm_sr_right, invm_right]:
@@ -239,7 +256,7 @@ def show_with_calculation(
         '\n'.join(extra_notes+[
             r'$m_\text{true} = '+f'{mass:.0f}$ MeV',
             ' '.join(f'{name} = {val:.0f}' for name, val in zip('AEBDC', (a,e,b,d,c))),
-            r'$F_\text{exp} = C\times(\max(A+E,0.4)/(B+D)) = '+f"{f_exp:.1f}\pm{f_unc:.1f}$",
+            r'$F_\text{exp} = C\times(\max(A+E,0.4)/(B+D)) = '+f"{f_exp:.1f}$",
             r'$F_\text{obs} = '+f'{f_obs:.0f}$',
             f"P Value = {p_value:.1e}"
         ]),
