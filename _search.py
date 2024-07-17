@@ -139,7 +139,9 @@ def invm_y0(
             # (so strongly >68% of the trials have F==0)
             # using the std dev is a conservate estimate that isn't far off
             f_up = f_exp+np.std(f_s)
-        p_value = np.sum(f_s > f_obs)/n_trials
+        # the P-value of the observation f_obs is the frequency of that number
+        # of events in F (or more) is seen in the toys.
+        p_value = np.sum(f_s >= f_obs)/n_trials
     
         search_result[i] = (
             m,
