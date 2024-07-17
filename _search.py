@@ -7,7 +7,6 @@ import numpy as np
 from tqdm import tqdm
 
 import hist
-from mplhep.error_estimation import poisson_interval
 
 from .exclusion.production.mass_resolution import alic_2016_simps as default_mass_resolution
 from .plot import show as _show
