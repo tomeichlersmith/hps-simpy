@@ -34,11 +34,11 @@ def exclusion_estimate(*,
     eps2,
     z,
     invm_cr_h,
-    pre_selection_eff_by_mass_h,
     final_selection_eff_by_mass_h,
     mean_energy_GeV_by_mass,
     data_z,
     simp_parameters = {},
+    pre_selection_eff_by_mass_h = None,
 ):
     _oim_table = oim.load_or_new(
         max_signal_strength = 50.0,
@@ -57,7 +57,7 @@ def exclusion_estimate(*,
     for i_mass, m in tqdm(enumerate(mass), total=len(mass)):
         preselection_scale_factor = (
             4/pre_selection_eff_by_mass_h[m][hist.loc(-4.3):hist.loc(-4.3)+4:sum]
-        )
+        ) if pre_selection_eff_by_mass_h is not None else 1.0
         beta_F_z = (final_selection_eff_by_mass_h[m]*preselection_scale_factor).values()
         mean_gamma = mean_energy_GeV_by_mass[m]*1000 / m
         decay_gct_eps2_rho = mean_gamma*ctau(model.rate_Vd_decay_2l_eps2(m, rho=True))
