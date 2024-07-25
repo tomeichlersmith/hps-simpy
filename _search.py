@@ -158,6 +158,7 @@ def invm_y0(
 def show(
     result, *,
     extras = None,
+    legend_kw = {},
     **show_kw
 ):
     """Given a array of search results, plot them showing the observed and expected
@@ -185,7 +186,8 @@ def show(
         color='tab:blue', label='Expected'
     )
     raw.scatter(result['mass'], result['f_obs'], color='black', label='Observed')
-    raw.legend(title='SR L1L1')
+    legend_kw.setdefault('title','SR L1L1')
+    raw.legend(**legend_kw)
     raw.set_ylabel('Events')
     
     pval.scatter(result['mass'], result['p_value'], color='black')
