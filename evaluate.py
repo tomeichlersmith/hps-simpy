@@ -22,8 +22,8 @@ from typing import Callable
 
 @dataclass
 class Selections:
-    y0_cut : list[float]
-    vprojsig: float
+    y0_cut : Callable|list[float]
+    vprojsig: Callable|list[float]
     reco_category: str
     cr_range : tuple = (1.9, 2.4)
     sr_range : tuple = (1.0, 1.9)
@@ -32,6 +32,32 @@ class Selections:
     mass_window: float = 1.5
     mass_sideband: float = 4.5
 
+
+    @property
+    def y0_cut_f(self):
+        return (
+            polynomial(*self.y0_cut)
+            if isinstance(self.y0_cut, list) else
+            self.y0_cut
+        )
+
+
+    def __getstate__(self):
+        """Pickling the functions used to define the cuts is hard
+
+        so we just pickle the rest of the member dictionary"""
+        return {
+            k: v
+            for k, v in self.__dict__.items()
+            if k not in ['y0_cut','vprojsig']
+        }
+
+
+    def __setstate__(self, d):
+        """Unpickling with the knowledge that we threw away the functions"""
+        self.__dict__ = d
+        self.y0_cut = None
+        self.vprojsig = None
 
 
     def __call__(self, events):
@@ -59,12 +85,18 @@ class Selections:
         rc = both_l1 if self.reco_category == 'l1l1' else either_l1
         cr = (psum > self.cr_range[0])&(psum < self.cr_range[1])
         sr = (psum > self.sr_range[0])&(psum < self.sr_range[1]) 
-        the_y0_cut = polynomial(*self.y0_cut)
+
+        the_y0_cut = self.y0_cut_f
+        the_vps_cut = (
+            polynomial(*self.vprojsig)
+            if isinstance(self.vprojsig, list) else
+            self.vprojsig
+        )
         return SelectionSet(
             reco_category = rc,
             cr = cr,
             sr = sr,
-            vtx_proj_sig = vtx_proj_sig < self.vprojsig,
+            vtx_proj_sig = vtx_proj_sig < the_vps_cut(invm),
             min_y0 = (min_y0 > the_y0_cut(invm)),
             after_target = (z > self.target_pos),
             aliases = {
@@ -258,7 +290,7 @@ def run(
         y0_edges = search.deduce_y0_edges_from_y0_cut(
             o['data']['invm_vs_min_y0'],
             selections.mass_window,
-            polynomial(*selections.y0_cut)
+            selections.y0_cut_f
         ),
         invm_edges = (selections.mass_window, selections.mass_sideband),
         n_trials = 50000
