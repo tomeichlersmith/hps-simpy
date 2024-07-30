@@ -138,14 +138,14 @@ def process_signal(selections, events, mass):
     o['invm_pull_vs_min_y0'] = (
         hist.dask.Hist.new
         .Reg(100,0,10,label=r'$|m_\text{reco}-m_\text{true}|/\sigma_m$')
-        .Reg(400,0,2,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
         .Double()
     )
     o['invm_pull_vs_min_y0'].fill(invm_pull[sl.search], min_y0[sl.search])
     o['invm_vs_min_y0'] = (
         hist.dask.Hist.new
         .Reg(250,0,250,label=r'$m_\text{reco}$')
-        .Reg(400,0,2,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
         .Double()
     )
     o['invm_vs_min_y0'].fill(invm[sl.search], min_y0[sl.search])
@@ -181,7 +181,7 @@ def process_data(selections, events):
     h['invm_vs_min_y0'] = (
         hist.dask.Hist.new
         .Reg(250,0,250,label=r'$m_\text{reco}$')
-        .Reg(400,0,2,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
         .Double()
     )
     h['invm_vs_min_y0'].fill(invm[sl.search], min_y0[sl.search])
@@ -199,7 +199,7 @@ def process_data(selections, events):
         h[mass]['invm_pull_vs_min_y0'] = (
             hist.dask.Hist.new
             .Reg(100,0,10,label=r'$|m_\text{reco}-m_\text{true}|/\sigma_m$')
-            .Reg(400,0,2,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+            .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
             .Double()
         )
         h[mass]['invm_pull_vs_min_y0'].fill(
