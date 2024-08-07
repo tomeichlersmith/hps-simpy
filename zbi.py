@@ -194,7 +194,11 @@ class ZBiOptimum:
         to_plot, xbins, cbarlabel = self.Z[z_sl], self.variable, r'$Z_\mathrm{Bi}$'
         if z is not None:
             if z == 'diff':
-                to_plot = to_plot[...,1:]-to_plot[...,:-1]
+                to_plot = (
+                    to_plot[...,1:]-to_plot[...,:-1]
+                    if self.up else
+                    to_plot[...,:-1]-to_plot[...,1:]
+                )
                 xbins = xbins[slice(1,None,None) if self.up else slice(None,-1,None)]
                 cbarlabel = r'$\Delta Z_\mathrm{Bi}$'
             else:
