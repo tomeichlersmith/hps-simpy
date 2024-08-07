@@ -4,7 +4,7 @@ import numpy as np
 import scipy
 
 # fitting peaks with gaussians has been done in exclusion.fit
-from exclusion.fit import weightedmean, itermean, scaled_normal, fitnorm
+from .exclusion.fit import weightedmean, itermean, scaled_normal, fitnorm
 
 def _series(x, *coefficients):
     return sum(c*x**p for p, c in enumerate(coefficients))
