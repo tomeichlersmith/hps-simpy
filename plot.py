@@ -33,6 +33,32 @@ def histplot(h, **kwargs):
     )
 
 
+def plot2d(*args, cbarlabel = None, **kwargs):
+    kwargs['flow'] = None
+    kwargs['cbarpad'] = 0.4
+    art = mplhep.hist2dplot(*args, **kwargs)
+    art.cbar.set_label(cbarlabel)
+    return art
+
+
+def annotate(s, loc = 'upper right', **kwargs):
+    if isinstance(loc, str):
+        if loc == 'upper right':
+            kwargs.update({
+                'xy': (0.95,0.95),
+                'xycoords': 'axes fraction',
+                'ha': 'right',
+                'va': 'top'
+            })
+        else:
+            raise ValueError(f'loc={loc} is not a known location name')
+    elif isinstance(loc, tuple):
+        kwargs['xy'] = loc
+    else:
+        raise ValueError(f'Value of loc {loc} not understood')
+    return plt.annotate(s, **kwargs)
+
+
 def show(
     ax = None,
     filename = None,
