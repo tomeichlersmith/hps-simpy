@@ -95,7 +95,7 @@ class ZBiOptimum:
                 mean_energy_GeV = mean,
                 model = model
             )
-            sy = np.sum(signal_diff_yield, axis=0)
+            sy = np.sum(signal_diff_yield, axis=1)
             self.S[i_m,...] = _cumulate(sy, axis=1)
             self.B[i_m,...] = _cumulate(
                 self.h['data'][m][self.variable_name][sum,:].values(flow=True),

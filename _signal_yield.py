@@ -20,8 +20,6 @@ def _get_sampled_z_by_mass():
     with uproot.open(get_true_vd_z_file()) as f:
         for mass in range(20,126,2):
             sampled_z = f[f'{mass}/true_z_h'].values(flow=True)
-            # set zero values to one since we know the filtered
-            # histograms will also be zero if the sampled bin is zero
             sampled_z[sampled_z==0] = 1
             the_map[mass] = sampled_z
 
@@ -35,8 +33,11 @@ def normalize_along_z(sign_h, sampled_z):
 
     h = sign_h.copy()
     counts = h.values(flow=True)
-    counts[sampled_z > 0, :] /= sampled_z[sampled_z > 0, np.newaxis]
-    h[:,:] = counts
+    # the swapping of axes gets the z-axis to line up during the division
+    # and then returns it to position 0
+    # this works for situations where there aren't other axes as well
+    counts = np.swapaxes(np.swapaxes(counts,0,-1)/sampled_z, 0,-1)
+    h[...] = counts
     return h
 
 
@@ -70,11 +71,19 @@ def signal_yield(*,
         )
     )
     Nprompt = eps2*prompt_signal_yield_per_eps2
-    # eff is indexed by (z, ...extras...)
-    # Nprompt is indexed by (eps2)
-    # decay_weight is indexed by (z, eps2)
-    # return differential yield indexed by (z, eps2, ...extras...)
+    # want to return differential yield indexed by (eps2, z, ...extras...)
+    # where ...extras... is omitted if they weren't given with the counts
+    #   EXPRESSION                        INDEX
+    #   eff                               (z,) OR (z, ...extras...)
+    #   Nprompt                           (eps2,)
+    #   decay_weight                      (z, eps2)
+    #   eff*z.widths[:,np.newaxis]        (z, ...extras...)
+    #   Nprompt*decay_weight              (z, eps2)
+    if eff.ndim == 1:
+        # no ...extras..., so a simple transpose will suffice
+        return np.transpose(Nprompt*decay_weight)*(eff*z.widths)
+    # some ...extras..., need to do some newaxis stuff to tell np where to broadcast
     return (
-        (eff*z.widths[:,np.newaxis])[:,np.newaxis,...]
-        *(Nprompt*decay_weight)[:,:,np.newaxis]
+        (eff*z.widths[:,np.newaxis])[np.newaxis,...]
+        *np.transpose(Nprompt*decay_weight)[:,:,np.newaxis]
     )
