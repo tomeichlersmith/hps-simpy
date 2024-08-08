@@ -17,13 +17,59 @@ from simpy import get_true_vd_z_file
 from simpy.exclusion.production import mass_resolution
 from simpy.exclusion.production._polynomial import polynomial
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Callable
+
+
+def polynomial_with_limit(*coefficients, floor = None, ceiling = None):
+    fit = polynomial(*coefficients)
+    # np.clip is not defined for dask_awkward, so we need to do max/min manually
+    if floor is None and ceiling is None:
+        return fit
+    elif floor is not None and ceiling is not None:
+        return lambda x: np.minimum(np.maximum(fit(x), floor), ceiling)
+    elif floor is not None:
+        return lambda x: np.maximum(fit(x), floor)
+    else:
+        return lambda x: np.minimum(fit(x), ceiling)    
+
+
+@dataclass
+class CutByMass:
+    coefficients: list[float]
+    floor : float = None
+    ceiling : float = None
+
+    def __post_init__(self):
+        """define the cut function callable now that we have been configured
+
+        np.clip is unfortunately not defined for dask_awkward, so
+        we have to manually do it ourselves using np.maximum and np.minimum
+        """
+        self._cut_function = polynomial_with_limit(
+            *self.coefficients,
+            floor = self.floor,
+            ceiling = self.ceiling
+        )
+
+    def __call__(self, mass):
+        return self._cut_function(mass)
+
+    def __getstate__(self):
+        """when pickling, use dataclasses.asdict to avoid attempting to pickle
+        the transient local functions"""
+        return asdict(self)
+
+    def __setstate__(self, d):
+        """when unpickling, make sure to call __init__ so that __post_init__
+        gets called as well and then transient local functions are recreated"""
+        self.__init__(**d)
+
 
 @dataclass
 class Selections:
-    y0_cut : Callable|list[float]
-    vprojsig: Callable|list[float]
+    y0_cut : CutByMass
+    vprojsig: CutByMass
     reco_category: str
     cr_range : tuple = (1.9, 2.4)
     sr_range : tuple = (1.0, 1.9)
@@ -31,33 +77,6 @@ class Selections:
     excl_mass_window: float = 2.8
     mass_window: float = 1.5
     mass_sideband: float = 4.5
-
-
-    @property
-    def y0_cut_f(self):
-        return (
-            polynomial(*self.y0_cut)
-            if isinstance(self.y0_cut, list) else
-            self.y0_cut
-        )
-
-
-    def __getstate__(self):
-        """Pickling the functions used to define the cuts is hard
-
-        so we just pickle the rest of the member dictionary"""
-        return {
-            k: v
-            for k, v in self.__dict__.items()
-            if k not in ['y0_cut','vprojsig']
-        }
-
-
-    def __setstate__(self, d):
-        """Unpickling with the knowledge that we threw away the functions"""
-        self.__dict__ = d
-        self.y0_cut = None
-        self.vprojsig = None
 
 
     def __call__(self, events):
@@ -86,18 +105,12 @@ class Selections:
         cr = (psum > self.cr_range[0])&(psum < self.cr_range[1])
         sr = (psum > self.sr_range[0])&(psum < self.sr_range[1]) 
 
-        the_y0_cut = self.y0_cut_f
-        the_vps_cut = (
-            polynomial(*self.vprojsig)
-            if isinstance(self.vprojsig, list) else
-            self.vprojsig
-        )
         return SelectionSet(
             reco_category = rc,
             cr = cr,
             sr = sr,
-            vtx_proj_sig = vtx_proj_sig < the_vps_cut(invm),
-            min_y0 = (min_y0 > the_y0_cut(invm)),
+            vtx_proj_sig = vtx_proj_sig < self.vprojsig(invm),
+            min_y0 = (min_y0 > self.y0_cut(invm)),
             after_target = (z > self.target_pos),
             aliases = {
                 'preselection': ['reco_category','sr'],
@@ -290,7 +303,7 @@ def run(
         y0_edges = search.deduce_y0_edges_from_y0_cut(
             o['data']['invm_vs_min_y0'],
             selections.mass_window,
-            selections.y0_cut_f
+            selections.y0_cut
         ),
         invm_edges = (selections.mass_window, selections.mass_sideband),
         n_trials = 50000
