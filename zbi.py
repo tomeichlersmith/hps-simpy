@@ -11,7 +11,6 @@ import uproot
 from .exclusion.models import ctau, simp
 from .exclusion import production
 from .exclusion.fit import weightedmean
-from . import get_true_vd_z_file
 from . import signal_yield
 from .plot import plt, plot2d, annotate, show
 
@@ -34,18 +33,6 @@ def bins_from_centers(c):
 
 def centers_from_bins(b):
     return (b[1:]+b[:-1])/2
-
-
-def normalize_along_z(sign_h, sampled_z):
-    """convert histogram of counts into efficiency along z-axis
-
-    assuming z-axis is axis 0"""
-
-    h = sign_h.copy()
-    counts = h.values(flow=True)
-    counts[sampled_z > 0, :] /= sampled_z[sampled_z > 0, np.newaxis]
-    h[:,:] = counts
-    return h
 
 
 def cumulate(arr, *, axis = 0, up = None):
@@ -92,31 +79,29 @@ class ZBiOptimum:
             production.radiative_acceptance.alic_2016_simps
         )
         _cumulate = functools.partial(cumulate, up = self.up)
-        
-        with uproot.open(get_true_vd_z_file()) as f:
-            for i_m, m in enumerate(self.mass):
-                sampled_z = f[f'{m}/true_z_h'].values(flow=True)
-                eff_h = normalize_along_z(self.h[f'simp{m}'][self.variable_name], sampled_z)
-                energy_h = self.h[f'simp{m}']['true_vd_energy']
-                mean, _stdd, _merr = weightedmean(energy_h.axes[0].centers, energy_h.values())
-                signal_diff_yield = signal_yield(
-                    mass = m,
-                    eps2 = self.eps2,
-                    z = eff_h.axes[0],
-                    prompt_signal_yield_per_eps2 = (
-                        total_prompt_signal_yield_per_eps2(m*model.mass_ratio_Ap_to_Vd)
-                    ),
-                    final_selection_eff_h = eff_h,
-                    mean_energy_GeV = mean,
-                    model = model
-                )
-                sy = np.sum(signal_diff_yield, axis=0)
-                self.S[i_m,...] = _cumulate(sy, axis=1)
-                self.B[i_m,...] = _cumulate(
-                    self.h['data'][m][self.variable_name][sum,:].values(flow=True),
-                    axis=0
-                )
-                self.Z[i_m,...] = zbi(self.S[i_m,...], self.B[i_m,...])
+    
+        for i_m, m in enumerate(self.mass):
+            counts_h = self.h[f'simp{m}'][self.variable_name]
+            energy_h = self.h[f'simp{m}']['true_vd_energy']
+            mean, _stdd, _merr = weightedmean(energy_h.axes[0].centers, energy_h.values())
+            signal_diff_yield = signal_yield(
+                mass = m,
+                eps2 = self.eps2,
+                z = counts_h.axes[0],
+                prompt_signal_yield_per_eps2 = (
+                    total_prompt_signal_yield_per_eps2(m*model.mass_ratio_Ap_to_Vd)
+                ),
+                final_selection_counts_h = counts_h,
+                mean_energy_GeV = mean,
+                model = model
+            )
+            sy = np.sum(signal_diff_yield, axis=0)
+            self.S[i_m,...] = _cumulate(sy, axis=1)
+            self.B[i_m,...] = _cumulate(
+                self.h['data'][m][self.variable_name][sum,:].values(flow=True),
+                axis=0
+            )
+            self.Z[i_m,...] = zbi(self.S[i_m,...], self.B[i_m,...])
 
     
     def view_mass(self, m, prefix = None):

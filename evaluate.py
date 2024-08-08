@@ -300,16 +300,6 @@ def run(
         pickle.dump(o, f)
 
     print('Exclusion')
-    pre_eff, final_eff = {}, {}
-    with uproot.open(get_true_vd_z_file()) as f:
-        for mass in range(20,126,2):
-            sampled_z = f[f'{mass}/true_z_h'].values()
-            # set zero values to one since we know the filtered
-            # histograms will also be zero if the sampled bin is zero
-            sampled_z[sampled_z==0] = 1
-            pre_eff[mass] = o[f'simp{mass}']['z']['pre',:]/sampled_z
-            final_eff[mass] = o[f'simp{mass}']['z']['final',:]/sampled_z
-    
     def get_mean_energy(m):
         energy_h = o[f'simp{m}']['energy']
         mean, stdd, merr = weightedmean(energy_h.axes[1].centers, energy_h['pre',:].values())
@@ -318,10 +308,12 @@ def run(
     o['excl_estimate'] = exclusion_estimate(
         mass = np.arange(20,126,2),
         eps2 = np.logspace(-12,-2,50),
-        z = pre_eff[20].axes[0],
+        z = o['simp20']['z'].axes[1],
         invm_cr_h = o['data']['cr'],
-        #pre_selection_eff_by_mass_h = pre_eff, # leaving off preselection scale factor
-        final_selection_eff_by_mass_h = final_eff,
+        final_selection_counts_by_mass_h = {
+            m: o[f'simp{m}']['z']['final',:]
+            for m in range(20,126,2)
+        },
         mean_energy_GeV_by_mass = {
             m:  get_mean_energy(m)
             for m in range(20,126,2)

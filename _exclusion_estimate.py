@@ -35,7 +35,7 @@ def exclusion_estimate(*,
     eps2,
     z,
     invm_cr_h,
-    final_selection_eff_by_mass_h,
+    final_selection_counts_by_mass_h,
     mean_energy_GeV_by_mass,
     data_z,
     simp_parameters = {},
@@ -62,7 +62,7 @@ def exclusion_estimate(*,
             prompt_signal_yield_per_eps2 = (
                 total_prompt_signal_yield_per_eps2(m*model.mass_ratio_Ap_to_Vd)
             ),
-            final_selection_eff_h = final_selection_eff_by_mass_h[m],
+            final_selection_counts_h = final_selection_counts_by_mass_h[m],
             mean_energy_GeV = mean_energy_GeV_by_mass[m],
             model = model
         )

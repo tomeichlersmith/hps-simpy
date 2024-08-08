@@ -11,17 +11,50 @@ import hist
 from .exclusion.models import ctau, simp
 
 
+def _get_sampled_z_by_mass():
+    import uproot
+    from . import get_true_vd_z_file
+
+    the_map = {}
+    
+    with uproot.open(get_true_vd_z_file()) as f:
+        for mass in range(20,126,2):
+            sampled_z = f[f'{mass}/true_z_h'].values(flow=True)
+            # set zero values to one since we know the filtered
+            # histograms will also be zero if the sampled bin is zero
+            sampled_z[sampled_z==0] = 1
+            the_map[mass] = sampled_z
+
+    return the_map
+
+
+def normalize_along_z(sign_h, sampled_z):
+    """convert histogram of counts into efficiency along z-axis
+
+    assuming z-axis is axis 0"""
+
+    h = sign_h.copy()
+    counts = h.values(flow=True)
+    counts[sampled_z > 0, :] /= sampled_z[sampled_z > 0, np.newaxis]
+    h[:,:] = counts
+    return h
+
+
 def signal_yield(*,
     mass,
     eps2,
     z,
     prompt_signal_yield_per_eps2,
-    final_selection_eff_h,
+    final_selection_counts_h,
     mean_energy_GeV,
     model = simp.Parameters(),
 ):
+    if getattr(signal_yield, 'sampled_z', None) is None:
+        signal_yield.sampled_z = _get_sampled_z_by_mass()
+
+    eff_h = normalize_along_z(final_selection_counts_h, signal_yield.sampled_z[mass])
     # keep all flow bins except those along the zero'th (z) axis
-    eff_wf = final_selection_eff_h.values(flow=True)
+    eff_wf = eff_h.values(flow=True)
     eff = eff_wf[1:-1,...]
 
     mean_gamma = mean_energy_GeV*1000 / mass
