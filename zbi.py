@@ -58,6 +58,7 @@ class ZBiOptimum:
     variable_label: str
     up: bool
     h : dict
+    signal_scale: float = 1.0
     mass: np.array = field(default_factory = lambda : np.arange(20,126,2))
     eps2: np.array = field(default_factory = lambda : np.logspace(-8,-4,100))
     simp_parameters: dict = field(default_factory = dict)
@@ -96,7 +97,7 @@ class ZBiOptimum:
                 model = model
             )
             sy = np.sum(signal_diff_yield, axis=1)
-            self.S[i_m,...] = _cumulate(sy, axis=1)
+            self.S[i_m,...] = _cumulate(sy, axis=1) * self.signal_scale
             self.B[i_m,...] = _cumulate(
                 self.h['data'][m][self.variable_name][sum,:].values(flow=True),
                 axis=0
@@ -203,16 +204,25 @@ class ZBiOptimum:
         )
         c_pts = None
         if contour is not None:
-            c_art = ax.contour(
-                centers_from_bins(xbins),
-                centers_from_bins(ybins),
-                to_plot,
-                levels = [contour],
-                colors='tab:red'
-            )
-            # get points before interupting line with label
-            c_pts = c_art.allsegs[0][0]
-            ax.clabel(c_art, c_art.levels, inline=True, fmt=lambda l: f'{l:.1e}', fontsize=10)
+            if contour == 'max':
+                ymax = centers_from_bins(ybins)
+                xmax = xbins[np.nanargmax(to_plot, axis=1)+1]
+                c_pts = (xmax, ymax)
+                ax.plot(
+                    xmax, ymax,
+                    color = 'tab:red'
+                )
+            elif isinstance(contour, (float,int)):
+                c_art = ax.contour(
+                    centers_from_bins(xbins),
+                    centers_from_bins(ybins),
+                    to_plot,
+                    levels = [contour],
+                    colors='tab:red'
+                )
+                # get points before interupting line with label
+                c_pts = (c_art.allsegs[0][0][:,0], c_art.allsegs[0][0][:,1])
+                ax.clabel(c_art, c_art.levels, inline=True, fmt=lambda l: f'{l:.1e}', fontsize=10)
         ax.set_xlabel(f'{self.variable_label} Cut')
         ax.set_ylabel(ylabel)
         ax.set_yscale(yscale)
