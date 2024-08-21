@@ -41,8 +41,10 @@ def exclusion_estimate(*,
     simp_parameters = {},
 ):
     _oim_table = oim.load_or_new(
-        max_signal_strength = 50.0,
-        n_test_mu = 200,
+        mu_values = np.concatenate([
+            np.arange(0,10,0.1),
+            np.arange(10,100,1.0)
+        ]),
         n_trials = 10_000
     )
     total_prompt_signal_yield_per_eps2 =  production.from_calculators(
