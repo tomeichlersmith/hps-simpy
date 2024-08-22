@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+import os
 from tqdm import tqdm
 
 import uproot
@@ -16,6 +19,12 @@ from simpy import exclusion_estimate, search
 from simpy import get_true_vd_z_file
 from simpy.exclusion.production import mass_resolution
 from simpy.exclusion.production._polynomial import polynomial
+from simpy.plot import plt, mpl, mplhep, show, from_dir, plt_mass_by_eps2
+from simpy import lumi
+from simpy import search
+lumi.data.lumi = 0.016*10.7
+import functools
+show = functools.partial(show, lumi = lumi.data.lumi, display = False)
 
 from dataclasses import dataclass, asdict
 from typing import Callable
@@ -275,8 +284,6 @@ def fill_histograms(selections, data_filter):
         o, = dask.compute(o)
 
     return o
-
-
 def run(
     output: str,
     data_filter: str,
@@ -339,3 +346,102 @@ def run(
     
     with open(output, 'wb') as f:
         pickle.dump(o, f)
+
+
+def annotate(*args, i_axis=0, **kwargs):
+    def _annotation_impl(fig, axes):
+        axes[i_axis].annotate(*args, **kwargs)
+    return _annotation_impl
+
+
+def plot(
+    evaluation: str|Path,
+    out_dir: str|Path = Path.cwd(),
+    label: List[str] = []
+):
+    """plot an evaluation
+
+    Parameters
+    ----------
+    evaluation: str|Path
+        path to pickle file holding the evaluation results (written by run usually)
+    out_dir: str|Path, optional, default is CWD
+        directory in which to put images
+    label: List[str], optional, default []
+        extra labels to include in plots
+    """
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(evaluation, 'rb') as f:
+        r = pickle.load(f)
+    
+    plot_invm_miny0 = functools.partial(
+        r['data']['invm_vs_min_y0'].plot,
+        cbarpad=0.4,
+        norm='log'
+    )
+    
+    search.show(
+        r['search'],
+        extras = annotate(
+            '\n'.join([
+                'Run 7800',
+                f'${r["selections"].mass_window}\sigma$ InvM Window',
+                f'${r["selections"].mass_sideband}\sigma$ InvM Sideband'
+            ]+label),
+            xy=(0.5,0.95),
+            xycoords='axes fraction',
+            ha='center', va='top',
+            size='x-small'
+        ),
+        legend_kw = dict(title='SR L1L2'),
+        lumi = lumi.data.lumi,
+        display = False,
+        filename = out_dir / 'search.pdf'
+    )
+
+    mass_with_min_pval = r['search']['mass'][np.argmin(r['search']['p_value'])]
+    plot_invm_miny0()
+    search.show_with_calculation(
+        mass_with_min_pval,
+        r['search'],
+        lumi = lumi.data.lumi,
+        display = False,
+        filename = out_dir / f'min-p-val-search-calculation-{mass_with_min_pval}.pdf'
+    )
+    
+    ee = r['excl_estimate']
+    plt_mass_by_eps2(
+        ee.mass, ee.eps2, ee.max_allowed, 'Max Signal Allowed Estimate',
+        vmax = 10
+    )
+    plt.annotate(
+        '\n'.join(['L1L2']+label),
+        xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
+    )
+    show(filename=out_dir / 'max-signal-allowed.pdf')
+    
+    plt_mass_by_eps2(
+        ee.mass, ee.eps2, ee.expected, 'Expected Signal',
+        vmax = 0.5
+    )
+    plt.annotate(
+        '\n'.join(['L1L2']+label),
+        xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
+    )
+    show(filename=out_dir / 'expected-signal.pdf')
+    
+    plt_mass_by_eps2(
+        ee.mass, ee.eps2, ee.expected/ee.max_allowed, 'Expected / Max Allowed',
+        # norm=mpl.colors.TwoSlopeNorm(vcenter=1.),
+        cmap='Blues',
+        vmax=0.1
+    )
+    plt.contour(ee.mass, ee.eps2, (ee.expected/ee.max_allowed).T, [lumi.data.lumi/10.7], colors='tab:red')
+    plt.annotate(
+        '\n'.join(['L1L2']+label),
+        xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top'
+    )
+    show(filename=out_dir / 'exclusion-estimate.pdf')
