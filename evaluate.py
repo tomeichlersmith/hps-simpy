@@ -284,6 +284,8 @@ def fill_histograms(selections, data_filter):
         o, = dask.compute(o)
 
     return o
+
+
 def run(
     output: str,
     data_filter: str,
@@ -377,40 +379,41 @@ def plot(
     with open(evaluation, 'rb') as f:
         r = pickle.load(f)
     
-    plot_invm_miny0 = functools.partial(
-        r['data']['invm_vs_min_y0'].plot,
-        cbarpad=0.4,
-        norm='log'
-    )
+    if 'search' in r:
+        plot_invm_miny0 = functools.partial(
+            r['data']['invm_vs_min_y0'].plot,
+            cbarpad=0.4,
+            norm='log'
+        )
+        
+        search.show(
+            r['search'],
+            extras = annotate(
+                '\n'.join([
+                    'Run 7800',
+                    f'${r["selections"].mass_window}\sigma$ InvM Window',
+                    f'${r["selections"].mass_sideband}\sigma$ InvM Sideband'
+                ]+label),
+                xy=(0.5,0.95),
+                xycoords='axes fraction',
+                ha='center', va='top',
+                size='x-small'
+            ),
+            legend_kw = dict(title='SR L1L2'),
+            lumi = lumi.data.lumi,
+            display = False,
+            filename = out_dir / 'search.pdf'
+        )
     
-    search.show(
-        r['search'],
-        extras = annotate(
-            '\n'.join([
-                'Run 7800',
-                f'${r["selections"].mass_window}\sigma$ InvM Window',
-                f'${r["selections"].mass_sideband}\sigma$ InvM Sideband'
-            ]+label),
-            xy=(0.5,0.95),
-            xycoords='axes fraction',
-            ha='center', va='top',
-            size='x-small'
-        ),
-        legend_kw = dict(title='SR L1L2'),
-        lumi = lumi.data.lumi,
-        display = False,
-        filename = out_dir / 'search.pdf'
-    )
-
-    mass_with_min_pval = r['search']['mass'][np.argmin(r['search']['p_value'])]
-    plot_invm_miny0()
-    search.show_with_calculation(
-        mass_with_min_pval,
-        r['search'],
-        lumi = lumi.data.lumi,
-        display = False,
-        filename = out_dir / f'min-p-val-search-calculation-{mass_with_min_pval}.pdf'
-    )
+        mass_with_min_pval = r['search']['mass'][np.argmin(r['search']['p_value'])]
+        plot_invm_miny0()
+        search.show_with_calculation(
+            mass_with_min_pval,
+            r['search'],
+            lumi = lumi.data.lumi,
+            display = False,
+            filename = out_dir / f'min-p-val-search-calculation-{mass_with_min_pval}.pdf'
+        )
     
     ee = r['excl_estimate']
     plt_mass_by_eps2(
@@ -418,7 +421,7 @@ def plot(
         vmax = 10
     )
     plt.annotate(
-        '\n'.join(['L1L2']+label),
+        '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
     )
     show(filename=out_dir / 'max-signal-allowed.pdf')
@@ -428,20 +431,22 @@ def plot(
         vmax = 0.5
     )
     plt.annotate(
-        '\n'.join(['L1L2']+label),
+        '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
     )
     show(filename=out_dir / 'expected-signal.pdf')
     
-    plt_mass_by_eps2(
+    im, cbar = plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.expected/ee.max_allowed, 'Expected / Max Allowed',
         # norm=mpl.colors.TwoSlopeNorm(vcenter=1.),
         cmap='Blues',
         vmax=0.1
     )
-    plt.contour(ee.mass, ee.eps2, (ee.expected/ee.max_allowed).T, [lumi.data.lumi/10.7], colors='tab:red')
+    excl_level = lumi.data.lumi/10.7
+    cbar.ax.axhline(excl_level, color='tab:red')
+    plt.contour(ee.mass, ee.eps2, (ee.expected/ee.max_allowed).T, [excl_level], colors='tab:red')
     plt.annotate(
-        '\n'.join(['L1L2']+label),
+        '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top'
     )
     show(filename=out_dir / 'exclusion-estimate.pdf')
