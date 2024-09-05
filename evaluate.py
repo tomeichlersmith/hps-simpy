@@ -88,6 +88,17 @@ class Selections:
     mass_sideband: float = 4.5
 
 
+    def mass_resolution(self, mass):
+        """return the mass resolution for the input mass given
+        our knowledge of the reco category that these selections are for"""
+        mr_func = (
+            mass_resolution.tom_2016_simps_l1l1
+            if self.reco_category == 'l1l1' else
+            mass_resolution.tom_2016_simps_l1l2
+        )
+        return mr_func(mass)
+
+
     def __call__(self, events):
         """apply the selections to the events and return the necessary categories in a SelectionSet"""
         pele = np.sqrt(
@@ -165,7 +176,7 @@ def process_signal(selections, events, mass):
     sl = selections(events)
 
     invm = events['vertex.invM_']*1000
-    sigma_m = mass_resolution.alic_2016_simps(mass)
+    sigma_m = selections.mass_resolution(mass)
     invm_pull = abs(invm - mass)/sigma_m
 
     cats = {
@@ -243,7 +254,7 @@ def process_data(selections, events):
     for mass in range(20,126,2):
         h[mass] = {}
 
-        sigma_m = mass_resolution.alic_2016_simps(mass)
+        sigma_m = selections.mass_resolution(mass)
         invm_pull = abs(invm - mass)/sigma_m
         
         excl_sl = sl.exclusion&(invm_pull < selections.excl_mass_window)
@@ -303,7 +314,7 @@ def run(
     # go up until mass+mass_sideband*resolution is above axis maximum
     sampled_mass = o['data']['invm_vs_min_y0'].axes[0].edges
     search_max = sampled_mass[(
-        np.argmax(sampled_mass+selections.mass_sideband*mass_resolution.alic_2016_simps(sampled_mass) > sampled_mass[-1])
+        np.argmax(sampled_mass+selections.mass_sideband*selections.mass_resolution(sampled_mass) > sampled_mass[-1])
     )]
 
     o['search'] = search.invm_y0(
