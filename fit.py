@@ -26,6 +26,8 @@ class series:
         self.covariance = cov
         return self
 
+    def __repr__(self):
+        return f'series({repr(self.coefficients)})'
     
     def __call__(self, x):
         return _series(x, *self.coefficients)
