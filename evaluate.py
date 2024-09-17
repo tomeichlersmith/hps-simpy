@@ -398,7 +398,11 @@ def annotate(*args, i_axis=0, **kwargs):
 def plot(
     evaluation: str|Path,
     out_dir: str|Path = Path.cwd(),
-    label: List[str] = []
+    label: List[str] = [],
+    vmax_expected = 0.5,
+    vmax_allowed  = 10,
+    vmax_ratio    = 0.1,
+    excl_level    = lumi.data.lumi / 10.7
 ):
     """plot an evaluation
 
@@ -457,7 +461,7 @@ def plot(
     ee = r['excl_estimate']
     plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.max_allowed, 'Max Signal Allowed Estimate',
-        vmax = 10
+        vmax = vmax_allowed
     )
     plt.annotate(
         '\n'.join(label),
@@ -467,7 +471,7 @@ def plot(
     
     plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.expected, 'Expected Signal',
-        vmax = 0.5
+        vmax = vmax_expected
     )
     plt.annotate(
         '\n'.join(label),
@@ -479,9 +483,8 @@ def plot(
         ee.mass, ee.eps2, ee.expected/ee.max_allowed, 'Expected / Max Allowed',
         # norm=mpl.colors.TwoSlopeNorm(vcenter=1.),
         cmap='Blues',
-        vmax=0.1
+        vmax = vmax_ratio
     )
-    excl_level = lumi.data.lumi/10.7
     cbar.ax.axhline(excl_level, color='tab:red')
     plt.contour(ee.mass, ee.eps2, (ee.expected/ee.max_allowed).T, [excl_level], colors='tab:red')
     plt.annotate(
