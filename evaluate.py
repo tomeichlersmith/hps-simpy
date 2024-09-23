@@ -134,12 +134,6 @@ class Selections:
             after_target = (z > self.target_pos),
             aliases = {
                 'preselection': ['reco_category','sr'],
-                'one_left': [
-                    'reco_category',
-                    'sr',
-                    'vtx_proj_sig',
-                    'after_target'
-                ],
                 'exclusion': [
                     'reco_category',
                     'sr',
@@ -147,7 +141,12 @@ class Selections:
                     'after_target',
                     'min_y0',
                 ],
-                'search': ['reco_category','sr', 'vtx_proj_sig', 'after_target']
+                'search': [
+                    'reco_category',
+                    'sr',
+                    'vtx_proj_sig',
+                    'after_target'
+                ]
             }
         )
 
@@ -187,7 +186,7 @@ def process_signal(selections, events, mass):
 
     cats = {
         'pre': sl.preselection,
-        'one-left': sl.one_left&(invm_pull < selections.excl_mass_window),
+        'one-left': sl.search&(invm_pull < selections.excl_mass_window),
         'final': sl.exclusion&(invm_pull < selections.excl_mass_window)
     }
 
@@ -264,8 +263,8 @@ def process_data(selections, events):
         .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
         .Double()
     ).fill(
-        events['vertex.pos_'].fZ[sl.one_left],
-        min_y0[sl.one_left]
+        events['vertex.pos_'].fZ[sl.search],
+        min_y0[sl.search]
     )
 
     for mass in range(20,126,2):
@@ -277,7 +276,7 @@ def process_data(selections, events):
         excl_sl = sl.exclusion&(invm_pull < selections.excl_mass_window)
         h[mass]['z'] = events['vertex.pos_'].fZ[excl_sl]
 
-        data_ext_sl = sl.one_left&(invm_pull < selections.excl_mass_window)
+        data_ext_sl = sl.search&(invm_pull < selections.excl_mass_window)
 
         h[mass]['vtx_z_vs_min_y0'] = (
             hist.dask.Hist.new
