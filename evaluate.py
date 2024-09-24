@@ -293,7 +293,7 @@ def process_data(selections, events):
 
     h = {}
     h['cr'] = hist.dask.Hist.new.Reg(220,0,220,label=r'$m_\text{reco}$ / MeV').Double()
-    h['cr'].fill(events[sl('reco_category','cr')]['vertex.invM_']*1000)
+    h['cr'].fill(events[sl.cr]['vertex.invM_']*1000)
 
     h['vtx_z_vs_min_y0'] = (
         hist.dask.Hist.new
