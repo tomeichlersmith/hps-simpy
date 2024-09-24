@@ -164,6 +164,70 @@ def z_h(*axes, prefix = None, **axis_kw):
     )
 
 
+def shared_histograms(selections, events, mass, out = None):
+    """Fill histograms in the same way regardless of sample"""
+
+    if out is None:
+        out = {}
+    
+    invm = events['vertex.invM_']*1000
+    sigma_m = selections.mass_resolution(mass)
+    invm_pull = abs(invm - mass)/sigma_m
+    mass_window = invm_pull < selections.excl_mass_window
+    ele_y0 = events['ele.track_.z0_']
+    pos_y0 = events['pos.track_.z0_']
+    min_y0 = np.minimum(abs(ele_y0), abs(pos_y0))
+    pele = np.sqrt(
+            events['ele.track_.px_']**2
+            +events['ele.track_.py_']**2
+            +events['ele.track_.pz_']**2
+    )*1000
+    ppos = np.sqrt(
+            events['pos.track_.px_']**2
+            +events['pos.track_.py_']**2
+            +events['pos.track_.pz_']**2
+    )*1000
+    psum = pele+ppos
+    sl = selections(events)
+
+    cats = {
+        'pre-selection': slice(None),
+        'L1L2' : sl.reco_category,
+        'Psum SR' : sl('reco_category','sr'),
+        'After Target': sl('reco_category','sr','after_target'),
+        'Mass Window': sl('reco_category','sr','after_target')&mass_window,
+        'VPS': sl('reco_category','sr','after_target','vtx_proj_sig')&mass_window,
+        'min-y0': sl('reco_category','sr','vtx_proj_sig','after_target','min_y0')&mass_window,
+    }
+
+    out['invm_vs_min_y0'] = (
+        hist.dask.Hist.new
+        .StrCategory(list(cats.keys()))
+        .Reg(300,0,300,label=r'$m_\text{reco}$ / MeV')
+        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+        .Double()
+    )
+    out['invm_vs_z'] = (
+        hist.dask.Hist.new
+        .StrCategory(list(cats.keys()))
+        .Reg(300,0,300,label=r'$m_\text{reco}$')
+        .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
+        .Double()
+    )
+    out['psum'] = (
+        hist.dask.Hist.new
+        .StrCategory(list(cats.keys()))
+        .Reg(300,0,300,label=r'$P_\text{sum}$ / MeV')
+        .Double()
+    )
+    for name, sl in cats.items():
+        out['invm_vs_min_y0'].fill(name, invm[sl], min_y0[sl])
+        out['invm_vs_z'].fill(name, invm[sl], events['vertex.pos_'].fZ[sl])
+        out['psum'].fill(name, psum[sl])
+
+    return out
+
+
 def process_signal(selections, events, mass):
     """From signal, we need three different distributions.
 
@@ -202,25 +266,7 @@ def process_signal(selections, events, mass):
         o['z'].fill(name, events[cat]['true_vd.vtx_z_'])
         o['energy'].fill(name, events[cat]['true_vd.energy_'])
 
-    ele_y0 = events['ele.track_.z0_']
-    pos_y0 = events['pos.track_.z0_']
-    min_y0 = np.minimum(abs(ele_y0), abs(pos_y0))
-
-    o['invm_pull_vs_min_y0'] = (
-        hist.dask.Hist.new
-        .Reg(100,0,10,label=r'$|m_\text{reco}-m_\text{true}|/\sigma_m$')
-        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
-        .Double()
-    )
-    o['invm_pull_vs_min_y0'].fill(invm_pull[sl.search], min_y0[sl.search])
-    o['invm_vs_min_y0'] = (
-        hist.dask.Hist.new
-        .Reg(250,0,250,label=r'$m_\text{reco}$')
-        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
-        .Double()
-    )
-    o['invm_vs_min_y0'].fill(invm[sl.search], min_y0[sl.search])
-
+    shared_histograms(selections, events, mass, out = o)
     
     return o
 
@@ -243,29 +289,41 @@ def process_data(selections, events):
     ele_y0 = events['ele.track_.z0_']
     pos_y0 = events['pos.track_.z0_']
     min_y0 = np.minimum(abs(ele_y0), abs(pos_y0))
+    vtx_z = events['vertex.pos_'].fZ
 
     h = {}
     h['cr'] = hist.dask.Hist.new.Reg(220,0,220,label=r'$m_\text{reco}$ / MeV').Double()
-    h['cr'].fill(
-        events[sl('reco_category','cr')]['vertex.invM_']*1000
-    )
-    h['invm_vs_min_y0'] = (
-        hist.dask.Hist.new
-        .Reg(250,0,250,label=r'$m_\text{reco}$')
-        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
-        .Double()
-    )
-    h['invm_vs_min_y0'].fill(invm[sl.search], min_y0[sl.search])
+    h['cr'].fill(events[sl('reco_category','cr')]['vertex.invM_']*1000)
 
     h['vtx_z_vs_min_y0'] = (
         hist.dask.Hist.new
         .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
-        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$ / mm')
         .Double()
     ).fill(
-        events['vertex.pos_'].fZ[sl.search],
+        vtx_z[sl.search],
         min_y0[sl.search]
     )
+
+    h['invm_vs_min_y0'] = (
+        hist.dask.Hist.new
+        .Reg(250,0,250,label=r'$m_\text{reco}$ / MeV')
+        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$ / mm')
+        .Double()
+    ).fill(invm[sl.search], min_y0[sl.search])
+
+    h['invm_vs_z'] = (
+        hist.dask.Hist.new
+        .StrCat(['search','excl'])
+        .Reg(250,0,250,label=r'$m_\text{reco}$ / MeV')
+        .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
+        .Double()
+    ).fill(
+        'search', invm[sl.search], vtx_z[sl.search]
+    ).fill(
+        'excl', invm[sl.exclusion], vtx_z[sl.exclusion]
+    )
+
 
     for mass in range(20,126,2):
         h[mass] = {}
@@ -288,16 +346,7 @@ def process_data(selections, events):
             min_y0[data_ext_sl]
         )
 
-        h[mass]['invm_pull_vs_min_y0'] = (
-            hist.dask.Hist.new
-            .Reg(100,0,10,label=r'$|m_\text{reco}-m_\text{true}|/\sigma_m$')
-            .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
-            .Double()
-        )
-        h[mass]['invm_pull_vs_min_y0'].fill(
-            invm_pull[sl.search],
-            min_y0[sl.search]
-        )
+        shared_histograms(selections, events, mass, out = h[mass])
 
     return h
 
@@ -485,7 +534,11 @@ def plot(
         vmax = vmax_ratio
     )
     cbar.ax.axhline(excl_level, color='tab:red')
-    plt.contour(ee.mass, ee.eps2, (ee.expected/ee.max_allowed).T, [excl_level], colors='tab:red')
+    plt.contour(
+        ee.mass, ee.eps2, (ee.expected/ee.max_allowed).T,
+        [excl_level],
+        colors='tab:red'
+    )
     plt.annotate(
         '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top'
