@@ -203,7 +203,7 @@ def shared_histograms(selections, events, mass, out = None):
     out['invm_vs_min_y0'] = (
         hist.dask.Hist.new
         .StrCategory(list(cats.keys()))
-        .Reg(300,0,300,label=r'$m_\text{reco}$ / MeV')
+        .Reg(300,0,3000,label=r'$m_\text{reco}$ / MeV')
         .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
         .Double()
     )
@@ -293,7 +293,7 @@ def process_data(selections, events):
 
     h = {}
     h['cr'] = hist.dask.Hist.new.Reg(220,0,220,label=r'$m_\text{reco}$ / MeV').Double()
-    h['cr'].fill(events[sl.cr]['vertex.invM_']*1000)
+    h['cr'].fill(invm[sl.cr])
 
     h['vtx_z_vs_min_y0'] = (
         hist.dask.Hist.new
