@@ -41,23 +41,15 @@ def normalize_along_z(sign_h, sampled_z):
     return h
 
 
-def signal_yield(*,
+def signal_yield_from_eff(*,
     mass,
     eps2,
     z,
     prompt_signal_yield_per_eps2,
-    final_selection_counts_h,
+    eff,
     mean_energy_GeV,
-    model = simp.Parameters(),
+    model = simp.Parameters()
 ):
-    if getattr(signal_yield, 'sampled_z', None) is None:
-        signal_yield.sampled_z = _get_sampled_z_by_mass()
-
-    eff_h = normalize_along_z(final_selection_counts_h, signal_yield.sampled_z[mass])
-    # keep all flow bins except those along the zero'th (z) axis
-    eff_wf = eff_h.values(flow=True)
-    eff = eff_wf[1:-1,...]
-
     mean_gamma = mean_energy_GeV*1000 / mass
     decay_gct_eps2_rho = mean_gamma*ctau(model.rate_Vd_decay_2l_eps2(mass, rho=True))
     decay_gct_eps2_phi = mean_gamma*ctau(model.rate_Vd_decay_2l_eps2(mass, rho=False))
@@ -86,4 +78,21 @@ def signal_yield(*,
     return (
         (eff*z.widths[:,np.newaxis])[np.newaxis,...]
         *np.transpose(Nprompt*decay_weight)[:,:,np.newaxis]
+    )
+
+
+def signal_yield(*,
+    final_selection_counts_h,
+    **kwargs,
+):
+    if getattr(signal_yield, 'sampled_z', None) is None:
+        signal_yield.sampled_z = _get_sampled_z_by_mass()
+
+    eff_h = normalize_along_z(final_selection_counts_h, signal_yield.sampled_z[mass])
+    # keep all flow bins except those along the zero'th (z) axis
+    eff_wf = eff_h.values(flow=True)
+    eff = eff_wf[1:-1,...]
+    return signal_yield_from_eff(
+        eff = eff,
+        **kwargs
     )
