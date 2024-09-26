@@ -203,7 +203,7 @@ def shared_histograms(selections, events, mass, out = None):
     out['invm_vs_min_y0'] = (
         hist.dask.Hist.new
         .StrCategory(list(cats.keys()))
-        .Reg(300,0,3000,label=r'$m_\text{reco}$ / MeV')
+        .Reg(300,0,300,label=r'$m_\text{reco}$ / MeV')
         .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
         .Double()
     )
@@ -217,7 +217,7 @@ def shared_histograms(selections, events, mass, out = None):
     out['psum'] = (
         hist.dask.Hist.new
         .StrCategory(list(cats.keys()))
-        .Reg(300,0,300,label=r'$P_\text{sum}$ / MeV')
+        .Reg(300,0,3000,label=r'$P_\text{sum}$ / MeV')
         .Double()
     )
     for name, sl in cats.items():
