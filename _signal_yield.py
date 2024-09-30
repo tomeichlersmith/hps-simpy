@@ -83,6 +83,7 @@ def signal_yield_from_eff(*,
 
 def signal_yield(*,
     final_selection_counts_h,
+    mass,
     **kwargs,
 ):
     if getattr(signal_yield, 'sampled_z', None) is None:
@@ -94,5 +95,6 @@ def signal_yield(*,
     eff = eff_wf[1:-1,...]
     return signal_yield_from_eff(
         eff = eff,
+        mass = mass,
         **kwargs
     )
