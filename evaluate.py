@@ -257,7 +257,7 @@ def process_signal(selections, events, mass):
         o['z'].fill(name, events[cat]['true_vd.vtx_z_'])
         o['energy'].fill(name, events[cat]['true_vd.energy_'])
 
-    shared_histograms(selections, events, mass, out = o)
+#    shared_histograms(selections, events, mass, out = o)
     
     return o
 
@@ -286,15 +286,15 @@ def process_data(selections, events):
     h['cr'] = hist.dask.Hist.new.Reg(220,0,220,label=r'$m_\text{reco}$ / MeV').Double()
     h['cr'].fill(invm[sl.cr])
 
-    h['vtx_z_vs_min_y0'] = (
-        hist.dask.Hist.new
-        .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
-        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$ / mm')
-        .Double()
-    ).fill(
-        vtx_z[sl.search],
-        min_y0[sl.search]
-    )
+#    h['vtx_z_vs_min_y0'] = (
+#        hist.dask.Hist.new
+#        .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
+#        .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$ / mm')
+#        .Double()
+#    ).fill(
+#        vtx_z[sl.search],
+#        min_y0[sl.search]
+#    )
 
     h['invm_vs_min_y0'] = (
         hist.dask.Hist.new
@@ -325,19 +325,19 @@ def process_data(selections, events):
         excl_sl = sl.exclusion&(invm_pull < selections.excl_mass_window)
         h[mass]['z'] = events['vertex.pos_'].fZ[excl_sl]
 
-        data_ext_sl = sl.search&(invm_pull < selections.excl_mass_window)
-
-        h[mass]['vtx_z_vs_min_y0'] = (
-            hist.dask.Hist.new
-            .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
-            .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
-            .Double()
-        ).fill(
-            events['vertex.pos_'].fZ[data_ext_sl],
-            min_y0[data_ext_sl]
-        )
-
-        shared_histograms(selections, events, mass, out = h[mass])
+#        data_ext_sl = sl.search&(invm_pull < selections.excl_mass_window)
+#
+#        h[mass]['vtx_z_vs_min_y0'] = (
+#            hist.dask.Hist.new
+#            .Reg(250,-4.3,250-4.3,label=r'Vertex $z$ / mm')
+#            .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$')
+#            .Double()
+#        ).fill(
+#            events['vertex.pos_'].fZ[data_ext_sl],
+#            min_y0[data_ext_sl]
+#        )
+#
+#        shared_histograms(selections, events, mass, out = h[mass])
 
     return h
 
