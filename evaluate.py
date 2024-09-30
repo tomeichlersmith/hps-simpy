@@ -438,9 +438,9 @@ def plot(
     evaluation: str|Path,
     out_dir: str|Path = Path.cwd(),
     label: List[str] = [],
-    vmax_expected = 0.5,
-    vmax_allowed  = 10,
-    vmax_ratio    = 0.1,
+    vmax_expected = None, # 0.5 for 1.6%
+    vmax_allowed  = None, # 10. for 1.6%
+    vmax_ratio    = None, # 0.1 for 1.6%
     excl_level    = None,
     data_frac = 0.016
 ):
@@ -461,6 +461,12 @@ def plot(
 
     if excl_level is None:
         excl_level = data_frac
+    if vmax_expected is None:
+        vmax_expected = 100.0*data_frac
+    if vmax_allowed is None:
+        vmax_allowed = 100.0*data_frac
+    if vmax_ratio is None:
+        vmax_ratio = 10.0*data_frac
 
     with open(evaluation, 'rb') as f:
         r = pickle.load(f)
