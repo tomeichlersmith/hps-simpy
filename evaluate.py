@@ -486,7 +486,7 @@ def plot(
                 size='x-small'
             ),
             legend_kw = dict(title='SR L1L2'),
-            lumi = lumi.data.lumi,
+            lumi = data_frac*lumi.data.total,
             display = False,
             filename = out_dir / 'search.pdf'
         )
@@ -496,12 +496,12 @@ def plot(
         search.show_with_calculation(
             mass_with_min_pval,
             r['search'],
-            lumi = data_frac*lumi.data.lumi,
+            lumi = data_frac*lumi.data.total,
             display = False,
             filename = out_dir / f'min-p-val-search-calculation-{mass_with_min_pval}.pdf'
         )
 
-    show = functools.partial(show, lumi = data_frac*lumi.data.lumi)
+    _show = functools.partial(show, lumi = data_frac*lumi.data.total)
     
     ee = r['excl_estimate']
     plt_mass_by_eps2(
@@ -512,7 +512,7 @@ def plot(
         '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
     )
-    show(filename=out_dir / 'max-signal-allowed.pdf')
+    _show(filename=out_dir / 'max-signal-allowed.pdf')
     
     plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.expected, 'Expected Signal',
@@ -522,7 +522,7 @@ def plot(
         '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
     )
-    show(filename=out_dir / 'expected-signal.pdf')
+    _show(filename=out_dir / 'expected-signal.pdf')
     
     im, cbar = plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.expected/ee.max_allowed, 'Expected / Max Allowed',
@@ -540,4 +540,4 @@ def plot(
         '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top'
     )
-    show(filename=out_dir / 'exclusion-estimate.pdf')
+    _show(filename=out_dir / 'exclusion-estimate.pdf')
