@@ -22,9 +22,8 @@ from simpy.exclusion.production._polynomial import polynomial
 from simpy.plot import plt, mpl, mplhep, show, from_dir, plt_mass_by_eps2
 from simpy import lumi
 from simpy import search
-lumi.data.lumi = 0.016*10.7
 import functools
-show = functools.partial(show, lumi = lumi.data.lumi, display = False)
+show = functools.partial(show, display = False)
 
 from dataclasses import dataclass, asdict
 from typing import Callable
@@ -450,7 +449,8 @@ def plot(
     vmax_expected = 0.5,
     vmax_allowed  = 10,
     vmax_ratio    = 0.1,
-    excl_level    = lumi.data.lumi / 10.7
+    excl_level    = None,
+    data_frac = 0.016
 ):
     """plot an evaluation
 
@@ -466,6 +466,9 @@ def plot(
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    if excl_level is None:
+        excl_level = data_frac
 
     with open(evaluation, 'rb') as f:
         r = pickle.load(f)
@@ -501,10 +504,12 @@ def plot(
         search.show_with_calculation(
             mass_with_min_pval,
             r['search'],
-            lumi = lumi.data.lumi,
+            lumi = data_frac*lumi.data.lumi,
             display = False,
             filename = out_dir / f'min-p-val-search-calculation-{mass_with_min_pval}.pdf'
         )
+
+    show = functools.partial(show, lumi = data_frac*lumi.data.lumi)
     
     ee = r['excl_estimate']
     plt_mass_by_eps2(
