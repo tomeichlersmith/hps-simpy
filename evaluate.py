@@ -407,7 +407,7 @@ def run(
     
     o['excl_estimate'] = exclusion_estimate(
         mass = np.arange(20,126,2),
-        eps2 = np.logspace(-12,-2,50),
+        eps2 = np.logspace(-8,-4,50),
         z = o['simp20']['z'].axes[1],
         invm_cr_h = o['data']['cr'],
         final_selection_counts_by_mass_h = {
