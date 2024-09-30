@@ -150,19 +150,6 @@ class Selections:
         )
 
 
-def z_h(*axes, prefix = None, **axis_kw):
-    label = axis_kw.get('label','$z$ / mm')
-    if prefix is not None:
-        label = f'{prefix} {label}'
-    axis_kw['label'] = label
-    return hist.dask.Hist(
-        *axes,
-        hist.axis.Regular(
-            250,-4.3,245.7,**axis_kw
-        )
-    )
-
-
 def shared_histograms(selections, events, mass, out = None):
     """Fill histograms in the same way regardless of sample"""
 
@@ -254,7 +241,12 @@ def process_signal(selections, events, mass):
     }
 
     o = {}
-    o['z'] = z_h(hist.axis.StrCategory(list(cats.keys())), prefix='Truth')
+    o['z'] = (
+        hist.dask.Hist.new
+        .StrCategory(list(cats.keys()))
+        .Reg(250,-4.3,250-4.3,label='Truth $z$ / mm')
+        .Double()
+    )
     o['energy'] = (
         hist.dask.Hist.new
         .StrCategory(list(cats.keys()))
