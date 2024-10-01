@@ -105,7 +105,7 @@ class ZBiOptimum:
             self.Z[i_m,...] = zbi(self.S[i_m,...], self.B[i_m,...])
 
     
-    def view_mass(self, m, prefix = None):
+    def view_mass(self, m, prefix = None, **show_kw):
         i_m = np.digitize(m, bins=self.mass)-1
         eps2_bins = bins_from_centers(self.eps2)
         note = functools.partial(annotate, r'$m_{V_D} = $'+f'{self.mass[i_m]:.0f}MeV')
@@ -122,7 +122,8 @@ class ZBiOptimum:
         plt.xlabel(f'{self.variable_label} Cut')
         note()
         show(
-            filename = f'{prefix}signal-yield.pdf' if prefix is not None else None
+            filename = f'{prefix}signal-yield.pdf' if prefix is not None else None,
+            **show_kw
         )
 
         plt.plot(
@@ -133,7 +134,8 @@ class ZBiOptimum:
         plt.xlabel(f'{self.variable_label} Cut')
         note()
         show(
-            filename = f'{prefix}bkgd-yield.pdf' if prefix is not None else None
+            filename = f'{prefix}bkgd-yield.pdf' if prefix is not None else None,
+            **show_kw
         )
 
         plot2d(
@@ -147,7 +149,8 @@ class ZBiOptimum:
         plt.xlabel(f'{self.variable_label} Cut')
         note()
         show(
-            filename = f'{prefix}zbi.pdf' if prefix is not None else None
+            filename = f'{prefix}zbi.pdf' if prefix is not None else None,
+            **show_kw
         )
 
     
