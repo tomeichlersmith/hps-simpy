@@ -49,7 +49,14 @@ def pbi(S, B):
 
 
 def zbi(S, B):
-    return np.sqrt(2) * erfinv(1 - 2*pbi(S,B))
+    p = pbi(S,B)
+    z = np.sqrt(2) * erfinv(1 - 2*p)
+    # when p is close enough to zero which happens when S is large enough compared to B
+    # since erfinv is just a quick approximation, Z ends up being inf and not drawn,
+    # we choose instead to put in a fixed value above the maximum that is naturally
+    # calculated so that the images are more helpful
+    z[p<1e-16] = 9.0
+    return z
 
 
 @dataclass
@@ -114,7 +121,7 @@ class ZBiOptimum:
             self.S[i_m,...].T,
             xbins=self.variable,
             ybins=eps2_bins,
-            cbarlabel = 'Signal Yield',
+            cbarlabel = 'Signal Yield / $\epsilon$',
             norm='log'
         )
         plt.yscale('log')
@@ -154,7 +161,7 @@ class ZBiOptimum:
         )
 
     
-    def view_slice(self, m = None, e = None, contour = None, z = None, **kwargs):
+    def view_slice(self, m = None, e = None, contour = None, z = None, notes = [], **kwargs):
         if m is None and e is None:
             raise ValueError('A mass or eps2 slice must be chosen.')
         elif m is not None and e is not None:
@@ -209,7 +216,13 @@ class ZBiOptimum:
         if contour is not None:
             if contour == 'max':
                 ymax = centers_from_bins(ybins)
-                xmax = xbins[np.nanargmax(to_plot, axis=1)+1]
+                # get the tightest cut that achieves the maximum
+                i_x = (
+                    np.nanargmax(to_plot, axis=1)+1
+                    if self.up else
+                    -1*np.nanargmax(np.flip(to_plot, axis=1), axis=1)
+                )
+                xmax = xbins[i_x]
                 c_pts = (xmax, ymax)
                 ax.plot(
                     xmax, ymax,
@@ -229,6 +242,6 @@ class ZBiOptimum:
         ax.set_xlabel(f'{self.variable_label} Cut')
         ax.set_ylabel(ylabel)
         ax.set_yscale(yscale)
-        annotate(note, color='white')
+        annotate('\n'.join([note]+notes), color='white')
         show(ax=ax, **kwargs)
         return c_pts
