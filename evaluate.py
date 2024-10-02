@@ -365,15 +365,16 @@ def fill_histograms(selections, data_filter):
 
 
 def run(
-    output: str,
+    output: str|Path,
     data_filter: str,
     **selection_kw
 ):
+    output = Path(output)
     selections = Selections(**selection_kw)
     o = fill_histograms(selections, data_filter)
     o['selections'] = selections
 
-    with open(output, 'wb') as f:
+    with open(output.parent / (output.name + '-hists.pkl'), 'wb') as f:
         pickle.dump(o, f)
 
     print('Search')
@@ -384,7 +385,9 @@ def run(
         np.argmax(sampled_mass+selections.mass_sideband*selections.mass_resolution(sampled_mass) > sampled_mass[-1])
     )]
 
-    o['search'] = search.invm_y0(
+    r = {}
+    r['selections'] = selections
+    r['search'] = search.invm_y0(
         mass = np.arange(20,search_max,1),
         data = o['data']['invm_vs_min_y0'],
         y0_edges = search.deduce_y0_edges_from_y0_cut(
@@ -396,8 +399,8 @@ def run(
         n_trials = 50000
     )
     
-    with open(output, 'wb') as f:
-        pickle.dump(o, f)
+    with open(output.parent / (output.name + '-eval.pkl'), 'wb') as f:
+        pickle.dump(r, f)
 
     print('Exclusion')
     def get_mean_energy(m):
@@ -405,7 +408,7 @@ def run(
         mean, stdd, merr = weightedmean(energy_h.axes[1].centers, energy_h['pre',:].values())
         return mean
     
-    o['excl_estimate'] = exclusion_estimate(
+    r['excl_estimate'] = exclusion_estimate(
         mass = np.arange(20,126,2),
         eps2 = np.logspace(-8,-4,50),
         z = o['simp20']['z'].axes[1],
@@ -424,8 +427,8 @@ def run(
         }
     )
     
-    with open(output, 'wb') as f:
-        pickle.dump(o, f)
+    with open(output.parent / (output.name + '-eval.pkl'), 'wb') as f:
+        pickle.dump(r, f)
 
 
 def annotate(*args, i_axis=0, **kwargs):
@@ -472,12 +475,6 @@ def plot(
         r = pickle.load(f)
     
     if 'search' in r:
-        plot_invm_miny0 = functools.partial(
-            r['data']['invm_vs_min_y0'].plot,
-            cbarpad=0.4,
-            norm='log'
-        )
-        
         search.show(
             r['search'],
             extras = annotate(
@@ -496,17 +493,8 @@ def plot(
             display = False,
             filename = out_dir / 'search.pdf'
         )
-    
-        mass_with_min_pval = r['search']['mass'][np.argmin(r['search']['p_value'])]
-        plot_invm_miny0()
-        search.show_with_calculation(
-            mass_with_min_pval,
-            r['search'],
-            lumi = data_frac*lumi.data.total,
-            display = False,
-            filename = out_dir / f'min-p-val-search-calculation-{mass_with_min_pval}.pdf'
-        )
 
+    
     _show = functools.partial(show, lumi = data_frac*lumi.data.total)
     
     ee = r['excl_estimate']
