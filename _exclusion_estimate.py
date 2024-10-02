@@ -16,7 +16,8 @@ from ._signal_yield import signal_yield
 ExclusionEstimateResult = namedtuple(
         'ExclusionEstimateResult',
         ['mass', 'eps2', 'z',
-        'diff_yield','expected','max_allowed']
+        'diff_yield','expected','max_allowed',
+        'signal_efficiency']
 )
 
 
@@ -53,11 +54,12 @@ def exclusion_estimate(*,
         production.radiative_acceptance.alic_2016_simps
     )
     model = simp.Parameters(**simp_parameters)
+    eff = np.full(mass.shape+z.centers.shape, np.nan)
     diff_yield = np.full(mass.shape+eps2.shape+z.centers.shape, np.nan)
     max_signal_allowed = np.full(mass.shape+eps2.shape, np.nan)
     expected_signal = np.full(mass.shape+eps2.shape, 0.0)
     for i_mass, m in tqdm(enumerate(mass), total=len(mass)):
-        diff_yield[i_mass,...] = signal_yield(
+        diff_yield[i_mass,...], eff[i_mass,...] = signal_yield(
             mass = m,
             eps2 = eps2,
             z = z,
@@ -82,6 +84,7 @@ def exclusion_estimate(*,
         z = z.centers,
         diff_yield = diff_yield,
         expected = expected_signal,
-        max_allowed = max_signal_allowed
+        max_allowed = max_signal_allowed,
+        signal_efficiency = eff
     )
 

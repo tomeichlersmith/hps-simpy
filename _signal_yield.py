@@ -97,4 +97,4 @@ def signal_yield(*,
         eff = eff,
         mass = mass,
         **kwargs
-    )
+    ), eff
