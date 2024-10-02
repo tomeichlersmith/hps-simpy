@@ -529,6 +529,18 @@ def plot(
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
     )
     _show(filename=out_dir / 'expected-signal.pdf')
+
+    plt.figure(figsize=(12,10))
+    ax = plt.gca()
+    im = ax.pcolormesh(ee.mass, ee.z, ee.signal_efficiency.T)
+    ax.set_ylabel(r'True Vertex $z$ / mm')
+    ax.set_xlabel('Invariant Mass / MeV')
+    cbar = plt.colorbar(im, label='Signal Efficiency')
+    plt.annotate(
+        '\n'.join(label),
+        xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
+    )
+    _show(filename=out_dir / 'signal-efficiency.pdf')
     
     im, cbar = plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.expected/ee.max_allowed, 'Expected / Max Allowed',
