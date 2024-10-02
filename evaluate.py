@@ -467,7 +467,7 @@ def plot(
     if vmax_expected is None:
         vmax_expected = 100.0*data_frac
     if vmax_allowed is None:
-        vmax_allowed = 100.0*data_frac
+        vmax_allowed = max(100.0*data_frac, 10.0)
     if vmax_ratio is None:
         vmax_ratio = 10.0*data_frac
 
