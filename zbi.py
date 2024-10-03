@@ -92,7 +92,7 @@ class ZBiOptimum:
             counts_h = self.h[f'simp{m}'][self.variable_name]
             energy_h = self.h[f'simp{m}']['true_vd_energy']
             mean, _stdd, _merr = weightedmean(energy_h.axes[0].centers, energy_h.values())
-            signal_diff_yield = signal_yield(
+            signal_diff_yield, _signal_efficiency = signal_yield(
                 mass = m,
                 eps2 = self.eps2,
                 z = counts_h.axes[0],
