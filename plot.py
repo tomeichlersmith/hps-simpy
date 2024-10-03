@@ -3,11 +3,31 @@ from pathlib import Path
 
 import numpy as np
 
+import hist
 import matplotlib as mpl
 import mplhep
 import mplhep.error_estimation
 mpl.style.use(mplhep.style.ROOT)
 import matplotlib.pyplot as plt
+
+
+def define_known_variance(d):
+    """I think since dask split the filling over multiple processes,
+    the variance knowledge is lost for data
+    We just tell it we do actually know the variance,
+    forcing it to use the values as the variance
+    which we know is correct in this case since they are unweighted counts
+    """
+    if isinstance(d, hist.Hist):
+        d._variance_known = True
+    elif isinstance(d, dict):
+        for v in d.values():
+            define_known_variance(v)
+    elif isinstance(d, (list,tuple)):
+        for v in d:
+            define_known_variance(v)
+    else:
+        raise ValueError(f'Unknown object while walking tree {d}')
 
 
 def poisson_interval_ignore_empty(sumw, sumw2):
