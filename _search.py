@@ -232,7 +232,7 @@ def show_with_calculation(
     ) = result[result['mass']==mass][0]
 
     for x in [invm_left, invm_sr_left, invm_sr_right, invm_right]:
-        plt.plot(3*[x], [y0_floor, y0_cut, 2], color='tab:red')
+        plt.plot(3*[x], [y0_floor, y0_cut, 4], color='tab:red')
     
     for y in [y0_floor, y0_cut]:
         plt.plot([invm_left, invm_right], 2*[y], color='tab:red')
