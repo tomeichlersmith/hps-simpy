@@ -479,7 +479,6 @@ def plot(
             r['search'],
             extras = annotate(
                 '\n'.join([
-                    'Run 7800',
                     f'${r["selections"].mass_window}\sigma$ InvM Window',
                     f'${r["selections"].mass_sideband}\sigma$ InvM Sideband'
                 ]+label),
