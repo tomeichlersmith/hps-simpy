@@ -79,6 +79,7 @@ class Selections:
     y0_cut : CutByMass
     vprojsig: CutByMass
     reco_category: str
+    absy: CutByMass = None
     cr_range : tuple = (1.9, 2.4)
     sr_range : tuple = (1.0, 1.9)
     target_pos : float = -4.3
@@ -117,6 +118,7 @@ class Selections:
         vtx_proj_sig = events['vtx_proj_sig']
         z = events['vertex.pos_'].fZ
         invm = events['vertex.invM_']*1000
+        absy = abs(events['vertex.pos_'].fY)
     
         both_l1 = events.eleL1&events.posL1
         either_l1 = (~both_l1)&(events.eleL1|events.posL1)
@@ -128,6 +130,7 @@ class Selections:
             reco_category = rc,
             cr = cr,
             sr = sr,
+            absy = (absy > -1 if self.absy is None else absy < self.absy(invm)),
             vtx_proj_sig = vtx_proj_sig < self.vprojsig(invm),
             min_y0 = (min_y0 > self.y0_cut(invm)),
             after_target = (z > self.target_pos),
@@ -138,12 +141,14 @@ class Selections:
                     'sr',
                     'vtx_proj_sig',
                     'after_target',
+                    'absy',
                     'min_y0',
                 ],
                 'search': [
                     'reco_category',
                     'sr',
                     'vtx_proj_sig',
+                    'absy',
                     'after_target'
                 ]
             }
