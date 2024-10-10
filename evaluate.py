@@ -80,6 +80,7 @@ class Selections:
     vprojsig: CutByMass
     reco_category: str
     absy: CutByMass = None
+    y0err: CutByMass = None
     cr_range : tuple = (1.9, 2.4)
     sr_range : tuple = (1.0, 1.9)
     target_pos : float = -4.3
@@ -113,8 +114,11 @@ class Selections:
         )
         psum = pele+ppos
         ele_y0 = events['ele.track_.z0_']
+        ele_y0_err = np.sqrt(events['ele.track_.cov_'][:,9])
         pos_y0 = events['pos.track_.z0_']
+        pos_y0_err = np.sqrt(events['pos.track_.cov_'][:,9])
         min_y0 = np.minimum(abs(ele_y0), abs(pos_y0))
+        max_y0_err = np.maximum(ele_y0_err, pos_y0_err)
         vtx_proj_sig = events['vtx_proj_sig']
         z = events['vertex.pos_'].fZ
         invm = events['vertex.invM_']*1000
@@ -131,6 +135,7 @@ class Selections:
             cr = cr,
             sr = sr,
             absy = (absy > -1 if self.absy is None else absy < self.absy(invm)),
+            max_y0_err = (max_y0_err > -1 if self.y0err is None else max_y0_err < self.y0err(invm)),
             vtx_proj_sig = vtx_proj_sig < self.vprojsig(invm),
             min_y0 = (min_y0 > self.y0_cut(invm)),
             after_target = (z > self.target_pos),
@@ -143,12 +148,14 @@ class Selections:
                     'after_target',
                     'absy',
                     'min_y0',
+                    'max_y0_err'
                 ],
                 'search': [
                     'reco_category',
                     'sr',
                     'vtx_proj_sig',
                     'absy',
+                    'max_y0_err',
                     'after_target'
                 ]
             }
