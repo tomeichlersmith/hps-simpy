@@ -14,6 +14,8 @@ from .exclusion.fit import weightedmean
 from . import signal_yield
 from .plot import plt, plot2d, annotate, show
 
+import matplotlib.patheffects as pe
+
 
 def get_edges_with_flow_pad(ax):
     return np.concatenate([
@@ -242,6 +244,11 @@ class ZBiOptimum:
         ax.set_xlabel(f'{self.variable_label} Cut')
         ax.set_ylabel(ylabel)
         ax.set_yscale(yscale)
-        annotate('\n'.join([note]+notes), color='white')
+        annotate(
+            '\n'.join([note]+notes),
+            path_effects = [
+                pe.withStroke(linewidth=4, foreground='white')
+            ]
+        )
         show(ax=ax, **kwargs)
         return c_pts
