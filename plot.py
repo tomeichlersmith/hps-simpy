@@ -98,7 +98,7 @@ def show(
     if display:
         plt.show()
     else:
-        plt.clf()
+        plt.close()
 
 
 def plt_mass_by_eps2(
