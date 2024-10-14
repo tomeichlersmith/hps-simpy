@@ -12,20 +12,9 @@ import pickle
 import dask
 from dask.diagnostics import ProgressBar
 
-from simpy.dask import SelectionSet, sample_list
-from simpy.exclusion.fit import weightedmean
-from simpy import exclusion_estimate, search
-from simpy.exclusion.production import mass_resolution
-from simpy import get_true_vd_z_file
-from simpy.exclusion.production._polynomial import polynomial
-from simpy.plot import mpl, plt, show, histplot, define_known_variance
-
-# selections
-
-# target position for 2016 data
-target_pos = -4.3
-# mass window in units of mass resolution sigma
-excl_mass_window = 2.8
+from .dask import sample_list
+from .plot import mpl, plt, show, histplot, define_known_variance
+from ._selections import StandardSelections
 
 
 class Analyzer:
@@ -57,60 +46,41 @@ class Analyzer:
             MyAnalysis()
     """
 
-    def __init__(self):
-        import argparse
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--mass', type=int, nargs='+', default=[30,60,90], help='mass points to plot')
-        parser.add_argument('--replot', action='store_true', help='histograms already filled, just re-plotting')
-        parser.add_argument('output',type=Path,help='pickle file for histograms')
-        args = parser.parse_args()
+    def __init__(self, *, selections = StandardSelections(), args = None):
+        if args is None:
+            import argparse
+            parser = argparse.ArgumentParser()
+            parser.add_argument(
+                '--mass', type=int, nargs='+',
+                default=[30,60,90], help='mass points to plot'
+            )
+            parser.add_argument(
+                '--replot', action='store_true',
+                help='histograms already filled, just re-plotting'
+            )
+            parser.add_argument(
+                'output',type=Path,
+                help='pickle file for histograms'
+            )
+            args = parser.parse_args()
     
         args.output.parent.mkdir(exist_ok=True, parents=True)
-
         self.masses = args.mass
         self.output = args.output
         self.outdir = args.output.parent
+        self.selections = selections
 
         if args.replot:
             with open(args.output, 'rb') as f:
                 o = pickle.load(f)
         else:
             o = self._run_fill()
+            o['selections'] = self.selections
             with open(args.output, 'wb') as f:
                 pickle.dump(o, f)
 
         self.plot(o)
 
-    def selections(self, events):
-        """apply the selections to the events and return the necessary categories
-    
-        1. Pre-Selected CR
-        2. Pre-Selected SR
-        3. Tight Selection SR
-        """
-        pele = np.sqrt(
-                events['ele.track_.px_']**2
-                +events['ele.track_.py_']**2
-                +events['ele.track_.pz_']**2
-        )
-        ppos = np.sqrt(
-                events['pos.track_.px_']**2
-                +events['pos.track_.py_']**2
-                +events['pos.track_.pz_']**2
-        )
-        psum = pele+ppos
-        z = events['vertex.pos_'].fZ
-    
-        both_l1 = events.eleL1&events.posL1
-        either_l1 = (~both_l1)&(events.eleL1|events.posL1)
-        cr = (psum > 1.9)&(psum < 2.4)
-        sr = (psum > 1.0)&(psum < 1.9)
-        return SelectionSet(
-            l1l1 = both_l1,
-            l1l2 = either_l1,
-            cr = cr,
-            sr = sr, after_target = (z > target_pos),
-        )
 
     def fill(self, events, *, true_z = False):
         # create and fill histograms
