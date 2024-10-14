@@ -109,6 +109,7 @@ class TightSelections(StandardSelections):
     vprojsig: CutByMass = None
     absy: CutByMass = None
     y0err: CutByMass = None
+    y0sig: CutByMass = None
 
 
     def __call__(self, events):
@@ -130,6 +131,7 @@ class TightSelections(StandardSelections):
         pos_y0_err = np.sqrt(events['pos.track_.cov_'][:,9])
         min_y0 = np.minimum(abs(ele_y0), abs(pos_y0))
         max_y0_err = np.maximum(ele_y0_err, pos_y0_err)
+        min_y0_sig = np.minimum(abs(ele_y0)/ele_y0_err, abs(pos_y0)/pos_y0_err)
         vtx_proj_sig = events['vtx_proj_sig']
         z = events['vertex.pos_'].fZ
         invm = events['vertex.invM_']*1000
@@ -148,7 +150,8 @@ class TightSelections(StandardSelections):
             absy = (absy > -1 if self.absy is None else absy < self.absy(invm)),
             max_y0_err = (max_y0_err > -1 if self.y0err is None else max_y0_err < self.y0err(invm)),
             vtx_proj_sig = vtx_proj_sig < self.vprojsig(invm),
-            min_y0 = (min_y0 > self.y0_cut(invm)),
+            min_y0 = (min_y0 > -1 if self.y0_cut is None else min_y0 > self.y0_cut(invm)),
+            min_y0_sig = (min_y0_sig > -1 if self.y0sig is None else min_y0_sig > self.y0sig(invm)),
             after_target = (z > self.target_pos),
             aliases = {
                 'preselection': ['reco_category','sr'],
@@ -158,8 +161,9 @@ class TightSelections(StandardSelections):
                     'vtx_proj_sig',
                     'after_target',
                     'absy',
+                    'max_y0_err',
                     'min_y0',
-                    'max_y0_err'
+                    'min_y0_sig',
                 ],
                 'search': [
                     'reco_category',
