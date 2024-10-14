@@ -93,8 +93,8 @@ class Analyzer:
     def process_simp(self, events, mass):
         sl = self.selections(events)
         invm = events['vertex.invM_']*1000
-        sigma_m = mass_resolution.tom_2016_simps_l1l2(mass)
-        mass_window = (abs(invm-mass)/sigma_m < excl_mass_window)
+        sigma_m = self.selections.mass_resolution(mass)
+        mass_window = (abs(invm-mass)/sigma_m < self.selections.excl_mass_window)
         h = self.fill(events[sl('sr','l1l2')&mass_window], true_z = True)
         return h
 
@@ -103,8 +103,8 @@ class Analyzer:
         invm = events['vertex.invM_']*1000
         o = {}
         for mass in range(20,126,2):
-            sigma_m = mass_resolution.tom_2016_simps_l1l2(mass)
-            mass_window = (abs(invm - mass)/sigma_m < excl_mass_window)
+            sigma_m = self.selections.mass_resolution(mass)
+            mass_window = (abs(invm - mass)/sigma_m < self.selections.excl_mass_window)
             o[mass] = self.fill(events[sl('sr','l1l2')&mass_window], true_z = False)
         return o
 
