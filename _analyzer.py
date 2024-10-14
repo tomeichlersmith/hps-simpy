@@ -96,12 +96,24 @@ class Analyzer:
         sigma_m = self.selections.mass_resolution(mass)
         mass_window = (abs(invm-mass)/sigma_m < self.selections.excl_mass_window)
         h = self.fill(events[sl('sr','l1l2')&mass_window], true_z = True)
+        h['true_vd_energy'] = (
+            hist.dask.Hist.new
+            .Reg(230,0,2.3,label=r'True $V_D$ Energy / GeV')
+            .Double()
+            .fill(events[sl('sr','l1l2')]['true_vd.energy_'])
+        )
         return h
 
     def process_data(self, events):
         sl = self.selections(events)
         invm = events['vertex.invM_']*1000
         o = {}
+        o['cr'] = (
+            hist.dask.Hist.new
+            .Reg(220,0,220,label=r'$m_\text{reco}$ / MeV')
+            .Double()
+            .fill(invm[sl.cr])
+        )
         for mass in range(20,126,2):
             sigma_m = self.selections.mass_resolution(mass)
             mass_window = (abs(invm - mass)/sigma_m < self.selections.excl_mass_window)
