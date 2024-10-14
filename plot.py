@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import numpy as np
+import awkward as ak
 
 import hist
 import matplotlib as mpl
@@ -26,6 +27,8 @@ def define_known_variance(d):
     elif isinstance(d, (list,tuple)):
         for v in d:
             define_known_variance(v)
+    elif isinstance(d, (ak.Array,np.ndarray)):
+        return
     else:
         raise ValueError(f'Unknown object while walking tree {d}')
 
