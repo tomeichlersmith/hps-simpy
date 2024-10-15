@@ -232,7 +232,7 @@ def show_with_calculation(
     ) = result[result['mass']==mass][0]
 
     for x in [invm_left, invm_sr_left, invm_sr_right, invm_right]:
-        plt.plot(3*[x], [y0_floor, y0_cut, 4], color='tab:red')
+        plt.plot(3*[x], [y0_floor, y0_cut, 6], color='tab:red')
     
     for y in [y0_floor, y0_cut]:
         plt.plot([invm_left, invm_right], 2*[y], color='tab:red')
@@ -268,7 +268,7 @@ def show_with_calculation(
         ha='right',
         va='top',
         color='black',
-        bbox = dict(fill=True, color='white', alpha=0.76)
+        #bbox = dict(fill=True, color='white', alpha=0.76)
     )
 
     _show(**show_kw)
