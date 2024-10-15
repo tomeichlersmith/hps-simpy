@@ -250,5 +250,4 @@ class ZBiOptimum:
                 pe.withStroke(linewidth=4, foreground='white')
             ]
         )
-        show(ax=ax, **kwargs)
-        return c_pts
+        return c_pts, fig, ax
