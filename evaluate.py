@@ -209,7 +209,7 @@ class TightEvaluation(Analyzer):
         h['invm_vs_min_y0'] = (
             hist.dask.Hist.new
             .Reg(250,0,250,label=r'$m_\text{reco}$ / MeV')
-            .Reg(800,0,4,label=r'$\min(|y_0^{e^-}|,|y_0^{e^+}|)$ / mm')
+            .Reg(600,0,6,label=r'$y_{0,\min}$ / mm')
             .Double()
         ).fill(invm[sl.search], min_y0[sl.search])
     
