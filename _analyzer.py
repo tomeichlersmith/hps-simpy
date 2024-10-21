@@ -59,6 +59,11 @@ class Analyzer:
                 help='histograms already filled, just re-plotting'
             )
             parser.add_argument(
+                '--data-filter', type=str,
+                help='how to choose subsample of data',
+                choices=['golden-run','10pct','is-data']
+            )
+            parser.add_argument(
                 'output',type=Path,
                 help='pickle file for histograms'
             )
@@ -68,6 +73,7 @@ class Analyzer:
         self.masses = args.mass
         self.output = args.output
         self.outdir = args.output.parent
+        self.data_filter = args.data_filter
         self.selections = selections
 
         if args.replot:
@@ -75,11 +81,24 @@ class Analyzer:
                 o = pickle.load(f)
         else:
             o = self._run_fill()
+            o['data_filter'] = self.data_filter
+            o['data_frac'] = self.data_frac
             o['selections'] = self.selections
             with open(args.output, 'wb') as f:
                 pickle.dump(o, f)
 
         self.plot(o)
+
+
+    @property
+    def data_frac(self):
+        if self.data_filter == 'golden-run':
+            return 0.016
+        if self.data_filter == '10pct':
+            return 0.1
+        if self.data_filter == 'is-data':
+            return 1.0
+        return None
 
 
     def fill(self, events, *, true_z = False):
@@ -134,7 +153,7 @@ class Analyzer:
         print('Constructing Task Graph')
         o = {
             name: self.process(name, tree)
-            for name, tree in tqdm(sample_list(test = False, data_filter = '10pct'))
+            for name, tree in tqdm(sample_list(test = False, data_filter = self.data_filter))
         }
     
         print('Computing Task Graph')

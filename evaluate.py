@@ -50,6 +50,12 @@ def plot(
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    with open(evaluation, 'rb') as f:
+        r = pickle.load(f)
+
+    if 'data_frac' in r:
+        data_frac = r['data_frac']
+
     if excl_level is None:
         excl_level = data_frac
     if vmax_expected is None:
@@ -58,9 +64,6 @@ def plot(
         vmax_allowed = max(100.0*data_frac, 10.0)
     if vmax_ratio is None:
         vmax_ratio = 10.0*data_frac
-
-    with open(evaluation, 'rb') as f:
-        r = pickle.load(f)
     
     if 'search' in r:
         search.show(
@@ -115,7 +118,7 @@ def plot(
         '\n'.join(label),
         xy=(0.95,0.95), xycoords='axes fraction', ha='right', va='top', color='white'
     )
-    _show(filename=out_dir / 'signal-efficiency.pdf')
+    show(filename=out_dir / 'signal-efficiency.pdf', lumi = 'SIMP Sim')
     
     im, cbar = plt_mass_by_eps2(
         ee.mass, ee.eps2, ee.expected/ee.max_allowed, 'Expected / Max Allowed',
