@@ -93,9 +93,11 @@ class StandardSelections:
         either_l1 = (~both_l1)&(events.eleL1|events.posL1)
         cr = (psum > self.cr_range[0])&(psum < self.cr_range[1])
         sr = (psum > self.sr_range[0])&(psum < self.sr_range[1]) 
+        rc = both_l1 if self.reco_category == 'l1l1' else either_l1
         return SelectionSet(
             l1l1 = both_l1,
             l1l2 = either_l1,
+            reco_category = rc,
             cr = cr,
             sr = sr,
             after_target = (z > self.target_pos),

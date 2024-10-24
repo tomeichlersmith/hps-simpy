@@ -114,12 +114,12 @@ class Analyzer:
         invm = events['vertex.invM_']*1000
         sigma_m = self.selections.mass_resolution(mass)
         mass_window = (abs(invm-mass)/sigma_m < self.selections.excl_mass_window)
-        h = self.fill(events[sl('sr','l1l2')&mass_window], true_z = True)
+        h = self.fill(events[sl('sr','reco_category')&mass_window], true_z = True)
         h['true_vd_energy'] = (
             hist.dask.Hist.new
             .Reg(230,0,2.3,label=r'True $V_D$ Energy / GeV')
             .Double()
-            .fill(events[sl('sr','l1l2')]['true_vd.energy_'])
+            .fill(events[sl('sr','reco_category')]['true_vd.energy_'])
         )
         return h
 
@@ -136,7 +136,7 @@ class Analyzer:
         for mass in range(20,126,2):
             sigma_m = self.selections.mass_resolution(mass)
             mass_window = (abs(invm - mass)/sigma_m < self.selections.excl_mass_window)
-            o[mass] = self.fill(events[sl('sr','l1l2')&mass_window], true_z = False)
+            o[mass] = self.fill(events[sl('sr','reco_category')&mass_window], true_z = False)
         return o
 
     def process(self, name, tree):
