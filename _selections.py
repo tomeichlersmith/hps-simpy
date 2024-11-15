@@ -59,9 +59,9 @@ class StandardSelections:
     cr_range : tuple = (1.9, 2.4)
     sr_range : tuple = (1.0, 1.9)
     target_pos : float = -4.3
-    excl_mass_window: float = 2.8
+    excl_mass_window: float = 1.5
     mass_window: float = 1.5
-    mass_sideband: float = 4.5
+    mass_sideband: float = 6.5
     reco_category: str = 'l1l2'
 
     def mass_resolution(self, mass):
@@ -112,6 +112,7 @@ class TightSelections(StandardSelections):
     absy: CutByMass = None
     y0err: CutByMass = None
     y0sig: CutByMass = None
+    remove_same_side: bool = True
 
 
     def __call__(self, events):
@@ -144,6 +145,7 @@ class TightSelections(StandardSelections):
         rc = both_l1 if self.reco_category == 'l1l1' else either_l1
         cr = (psum > self.cr_range[0])&(psum < self.cr_range[1])
         sr = (psum > self.sr_range[0])&(psum < self.sr_range[1]) 
+        same_side = ele_y0*pos_y0 > 0.0
 
         return SelectionSet(
             reco_category = rc,
@@ -155,6 +157,7 @@ class TightSelections(StandardSelections):
             min_y0 = (min_y0 > -1 if self.y0_cut is None else min_y0 > self.y0_cut(invm)),
             min_y0_sig = (min_y0_sig > -1 if self.y0sig is None else min_y0_sig > self.y0sig(invm)),
             after_target = (z > self.target_pos),
+            opposite_sides = (~same_side if self.remove_same_side else min_y0 > -1.0),
             aliases = {
                 'preselection': ['reco_category','sr'],
                 'exclusion': [
@@ -166,6 +169,7 @@ class TightSelections(StandardSelections):
                     'max_y0_err',
                     'min_y0',
                     'min_y0_sig',
+                    'opposite_sides',
                 ],
                 'search': [
                     'reco_category',
@@ -173,6 +177,7 @@ class TightSelections(StandardSelections):
                     'vtx_proj_sig',
                     'absy',
                     'max_y0_err',
+                    'opposite_sides',
                     'after_target'
                 ]
             }
