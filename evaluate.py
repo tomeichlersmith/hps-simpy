@@ -58,12 +58,6 @@ def plot(
 
     if excl_level is None:
         excl_level = data_frac
-    if vmax_expected is None:
-        vmax_expected = 100.0*data_frac
-    if vmax_allowed is None:
-        vmax_allowed = max(100.0*data_frac, 10.0)
-    if vmax_ratio is None:
-        vmax_ratio = 10.0*data_frac
     
     if 'search' in r:
         search.show(
@@ -251,6 +245,7 @@ class TightEvaluation(Analyzer):
         )]
     
         r = {}
+        r['data_frac'] = self.data_frac
         r['selections'] = self.selections
         r['search'] = search.invm_y0(
             mass = np.arange(20,search_max,1),
