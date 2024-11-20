@@ -32,8 +32,13 @@ def _golden_run(fp):
 def _alic_10pct(fp):
     return _is_data(fp) and 'blpass4c' in fp.stem
 
+
+def _full_lumi(fp):
+    return _is_data(fp) and 'pass4kf' in fp.stem
+
+
 _data_filters = {
-    'is-data' : _is_data,
+    'full-lumi': _full_lumi,
     '10pct' : _data_10pct,
     'golden-run': _golden_run,
     'alic-10pct': _alic_10pct
