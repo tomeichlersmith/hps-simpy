@@ -61,7 +61,7 @@ class Analyzer:
             parser.add_argument(
                 '--data-filter', type=str,
                 help='how to choose subsample of data',
-                choices=['golden-run','10pct','is-data']
+                choices=['golden-run','10pct','full-lumi']
             )
             parser.add_argument(
                 'output',type=Path,
@@ -96,7 +96,7 @@ class Analyzer:
             return 0.016
         if self.data_filter == '10pct':
             return 0.1
-        if self.data_filter == 'is-data':
+        if self.data_filter == 'full-lumi':
             return 1.0
         return None
 
