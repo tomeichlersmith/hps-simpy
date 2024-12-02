@@ -81,6 +81,68 @@ def signal_yield_from_eff(*,
     )
 
 
+def signal_yield_from_events(*,
+    mass,
+    eps2,
+    z,
+    prompt_signal_yield_per_eps2,
+    events,
+    model = simp.Parameters()
+):
+    """The np.digitize function is not dask-capable, so we can't use dask
+    arrays for the events. That's okay, the signal samples are small enough
+    to hold an entire one in memory at a time.
+
+    """
+    # 1D arrays indexed by event
+    vd_gamma = events['true_vd.energy_'].to_numpy()*1000/mass
+    vd_decay = events['true_vd.vtx_z_'].to_numpy()
+    i_zbin = z.index(vd_decay) # not dask compatible
+
+    if getattr(signal_yield_from_events, 'sampled_z', None) is None:
+        signal_yield_from_events.sampled_z = _get_sampled_z_by_mass()
+
+    sim_counts = signal_yield_from_events.sampled_z[mass]
+    
+    # (event,)
+    sim_sample_weight = 1/sim_counts[i_zbin]
+
+    # (event,)
+    decay_gct_eps2_rho = vd_gamma*ctau(model.rate_Vd_decay_2l_eps2(mass, rho=True))
+    decay_gct_eps2_phi = vd_gamma*ctau(model.rate_Vd_decay_2l_eps2(mass, rho=False))
+
+    # (event, eps2)
+    decay_weight = (
+        model.br(model.rate_Vrho_pi, mass)*eps2*np.transpose(np.exp(
+            np.multiply.outer(eps2, -4.3-vd_decay)/decay_gct_eps2_rho
+        )/decay_gct_eps2_rho)
+        +
+        model.br(model.rate_Vphi_pi, mass)*eps2*np.transpose(np.exp(
+            np.multiply.outer(eps2, -4.3-vd_decay)/decay_gct_eps2_phi
+        )/decay_gct_eps2_phi)
+    )
+
+    # (eps2,)
+    Nprompt = eps2*prompt_signal_yield_per_eps2
+
+    # (eps2, event)
+    total_weight = sim_sample_weight*np.transpose(decay_weight*Nprompt)
+
+    # histogram total_weight along events into z to get differential yield
+    nbins = z.size
+    scaled_idx = (
+        nbins*np.arange(eps2.shape[0])[:,np.newaxis]
+        +np.vstack(eps2.shape[0]*(i_zbin,))
+    )
+    diff_yield = np.bincount(
+        scaled_idx.ravel(),
+        weights = total_weight.ravel(),
+        minlength = nbins*eps2.shape[0]+1
+    )[:-1]
+    diff_yield.shape = eps2.shape+(nbins,)
+    return diff_yield
+
+
 def signal_yield(*,
     final_selection_counts_h,
     mass,
