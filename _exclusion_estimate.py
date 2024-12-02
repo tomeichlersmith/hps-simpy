@@ -48,7 +48,7 @@ def exclusion_estimate_from_diff_yield(*,
     )
     max_signal_allowed = np.full(mass.shape+eps2.shape, np.nan)
     expected_signal = np.full(mass.shape+eps2.shape, 0.0)
-    for i_mass, m in tqdm(enumerate(mass), total=len(mass)):
+    for i_mass, m in tqdm(enumerate(mass), desc='OIM', total=len(mass)):
         yield_cdf_lut = construct_yield_cdf_lut(diff_yield[i_mass,...])
         expected_signal[i_mass,:] = np.sum(diff_yield[i_mass,...], axis=1)
         data_x = (
@@ -87,7 +87,7 @@ def exclusion_estimate(*,
     model = simp.Parameters(**simp_parameters)
     eff = np.full(mass.shape+z.centers.shape, np.nan)
     diff_yield = np.full(mass.shape+eps2.shape+z.centers.shape, np.nan)
-    for i_mass, m in tqdm(enumerate(mass), total=len(mass)):
+    for i_mass, m in tqdm(enumerate(mass), desc='Sig Yield', total=len(mass)):
         diff_yield[i_mass,...], eff[i_mass,...] = signal_yield(
             mass = m,
             eps2 = eps2,
@@ -105,6 +105,7 @@ def exclusion_estimate(*,
         eps2 = eps2,
         z = z.centers,
         diff_yield = diff_yield,
+        data_z = data_z,
         signal_efficiency = eff
     )
 
