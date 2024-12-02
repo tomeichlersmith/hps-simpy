@@ -94,6 +94,9 @@ def signal_yield_from_events(*,
     to hold an entire one in memory at a time.
 
     """
+    if len(events) == 0:
+        return np.full(eps2.shape+z.centers.shape, 0.0), np.full(z.centers.shape, 0.0)
+
     # 1D arrays indexed by event
     vd_gamma = events['true_vd.energy_'].to_numpy()*1000/mass
     vd_decay = events['true_vd.vtx_z_'].to_numpy()
@@ -140,7 +143,12 @@ def signal_yield_from_events(*,
         minlength = nbins*eps2.shape[0]+1
     )[:-1]
     diff_yield.shape = eps2.shape+(nbins,)
-    return diff_yield
+    sig_eff = np.bincount(
+        i_zbin,
+        weights = sim_sample_weight,
+        minlength = nbins
+    )
+    return diff_yield, sig_eff
 
 
 def signal_yield(*,

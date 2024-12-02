@@ -292,3 +292,61 @@ class TightEvaluation(Analyzer):
         
         with open(self.outdir / 'eval.pkl', 'wb') as f:
             pickle.dump(r, f)
+
+
+def exclusion_from_event_weights(
+    histograms, # to get selection and data_z
+):
+    with open(histograms, 'rb') as f:
+        h = pickle.load(f)
+
+    invm_cr_h = h['data']['cr']
+    mass = np.arange(20,126,2)
+    eps2 = np.logspace(-8,-4,50)
+    z = h['simp20']['z'].axes[1]
+    selections = h['selections']
+
+    from .exclusion.models import simp
+    from .exclusion import production
+    from .dask import sample_list
+    from ._signal_yield import signal_yield_from_events
+    from ._exclusion_estimate import exclusion_estimate_from_diff_yield
+    s = dict(sample_list(test=False, data_filter='golden-run'))
+
+    total_prompt_signal_yield_per_eps2 = production.from_calculators(
+        production.radiative_fraction.alic_2016_simps,
+        production.TridentDifferentialProduction.from_hist(invm_cr_h),
+        production.radiative_acceptance.alic_2016_simps
+    )
+    model = simp.Parameters()
+    eff = np.full(mass.shape+z.centers.shape, np.nan)
+    diff_yield = np.full(mass.shape+eps2.shape+z.centers.shape, np.nan)
+    for i_mass, m in tqdm(enumerate(mass), desc='Sig Yield', total=len(mass)):
+        events = uproot.concatenate(s[f'simp{m}'])
+        sl = selections(events)
+        invm = events['vertex.invM_']*1000
+        sigma_m = selections.mass_resolution(m)
+        invm_pull = abs(invm - m)/sigma_m
+        diff_yield[i_mass,...], eff[i_mass,...] = signal_yield_from_events(
+            mass = m,
+            eps2 = eps2,
+            z = z,
+            prompt_signal_yield_per_eps2 = (
+                total_prompt_signal_yield_per_eps2(m*model.mass_ratio_Ap_to_Vd)
+            ),
+            events = events[sl.exclusion&(invm_pull < selections.excl_mass_window)],
+            model = model
+        )
+
+    return exclusion_estimate_from_diff_yield(
+        mass = mass,
+        eps2 = eps2,
+        z = z,
+        diff_yield = diff_yield,
+        eff = eff,
+        data_z = {
+            m: h['data'][m]['z']
+            for m in range(20,126,2)
+        }
+    )
+    
