@@ -56,6 +56,64 @@ def histplot(h, **kwargs):
     )
 
 
+def efficiency_plot(counts_h, denominator = None, **kwargs):
+    import scipy
+    for disallowed in ['w2method','w2','density','yerr']:
+        if disallowed in kwargs:
+            raise KeyError(f'Cannot manually pass {disallowed} to efficiency_plot')
+    k = counts_h.values() if isinstance(counts_h, hist.Hist) else counts_h
+    n = denominator if denominator is not None else k[0]
+    # Eq 11 from https://arxiv.org/pdf/physics/0701199v1
+    # defines the probability of a true efficiency epsilon
+    # given the observation of k events passing out of n events
+    # we can use this probability distribution to find the confidence
+    # bands around our estimate of efficiency
+    # Integrating Eq 11 from 0 up to some upper limit x is
+    # equal to the regularized incomplete beta function
+    #   scipy.special.betainc
+    # with parameters
+    #   a = k+1 and b = n-k+1
+    # The inverse of this function is also defined in scipy
+    #  scipy.special.betainc
+    # which we can use to find different values of the efficiency
+    # that correspond to upper limits depending on the probability
+    # that the true efficiency is below it
+    def efficiency_upper_limit(probability):
+        return scipy.special.betaincinv(k+1, n-k+1, np.array(probability)[:,np.newaxis])
+
+    # also as suggested by the reference above,
+    # use the mode estimator for the estimate of the true efficiency
+    eff = k/n
+
+    # find the 1sigma = 68.3% confidence band
+    # by starting with a symmetric assumption (68.3/2% on each side of the mode)
+    # and then clipping these probabilities depending on the probability that
+    # the true efficiency is below the mode
+    coverage = 0.683
+
+    prob_true_below_mode = scipy.special.betainc(k+1, n-k+1, eff)
+
+    lowlim = np.maximum(prob_true_below_mode-coverage/2, 0.0)
+    uplim  = lowlim+coverage
+
+    over = uplim>1.0
+    lowlim[over] = uplim[over]-coverage
+    uplim[over] = 1.0
+    
+    lims = efficiency_upper_limit([lowlim, uplim])
+    yerr = abs(lims - np.vstack((eff,eff)))
+
+    # pass axes information to plotting if possible
+    if 'bins' not in kwargs and isinstance(counts_h, hist.Hist):
+        eff_h = hist.Hist(*counts_h.axes)
+        eff_h[:] = eff
+        return mplhep.histplot(eff_h, yerr = yerr, **kwargs)
+
+    # otherwise just have user supply binning with bins kwarg
+    return mplhep.histplot(eff, yerr = lim, **kwargs)
+
+
+
 def plot2d(*args, cbarlabel = None, **kwargs):
     kwargs['flow'] = None
     kwargs['cbarpad'] = 0.4
