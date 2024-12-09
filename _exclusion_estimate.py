@@ -103,9 +103,9 @@ def exclusion_estimate(*,
     return exclusion_estimate_from_diff_yield(
         mass = mass,
         eps2 = eps2,
-        z = z.centers,
+        z = z,
         diff_yield = diff_yield,
         data_z = data_z,
-        signal_efficiency = eff
+        eff = eff
     )
 
