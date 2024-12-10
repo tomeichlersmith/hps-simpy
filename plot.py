@@ -137,6 +137,8 @@ def annotate(s, loc = 'upper right', **kwargs):
         kwargs['xy'] = loc
     else:
         raise ValueError(f'Value of loc {loc} not understood')
+    if isinstance(s, (list,tuple)):
+        s = '\n'.join(s)
     return plt.annotate(s, **kwargs)
 
 
