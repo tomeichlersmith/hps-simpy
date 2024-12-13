@@ -141,7 +141,7 @@ class TightSelections(StandardSelections):
         absy = abs(events['vertex.pos_'].fY)
     
         both_l1 = events.eleL1&events.posL1
-        either_l1 = (~both_l1)&(events.eleL1|events.posL1)
+        either_l1 = (~both_l1)&((events.eleL1&events.posL2)|(events.eleL2&events.posL1))
         rc = both_l1 if self.reco_category == 'l1l1' else either_l1
         cr = (psum > self.cr_range[0])&(psum < self.cr_range[1])
         sr = (psum > self.sr_range[0])&(psum < self.sr_range[1]) 
