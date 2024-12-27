@@ -9,6 +9,8 @@ def get_data_dir():
         return Path('/sdf/group/hps/user-data/eichl008/simp-l1l2/analysis')
     elif hn.endswith('zebra01.spa.umn.edu'):
         return Path('/export/scratch/users/eichl008/hps/simp-l1l2/data')
+    elif hn.endswith('zuko'):
+        return Path('/home/tom/code/hps/simp-l1l2/data')
     else:
         raise ValueError(f'Unrecognized host {hn}')
 
