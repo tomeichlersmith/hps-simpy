@@ -72,7 +72,6 @@ def plot(
                 ha='center', va='top',
                 size='x-small'
             ),
-            legend_kw = dict(title='SR L1L2'),
             lumi = data_frac*lumi.data.total,
             display = False,
             filename = out_dir / 'search.pdf'
