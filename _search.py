@@ -186,7 +186,6 @@ def show(
         color='tab:blue', label='Expected'
     )
     raw.scatter(result['mass'], result['f_obs'], color='black', label='Observed')
-    legend_kw.setdefault('title','SR L1L1')
     raw.legend(**legend_kw)
     raw.set_ylabel('Events')
     
