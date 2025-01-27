@@ -37,7 +37,8 @@ def exclusion_estimate_from_diff_yield(*,
     z,
     diff_yield,
     data_z,
-    eff = None
+    eff = None,
+    confidence_level = 0.9
 ):
     _oim_table = oim.load_or_new(
         mu_values = np.concatenate([
@@ -55,7 +56,7 @@ def exclusion_estimate_from_diff_yield(*,
             yield_cdf_lut[..., z.index(data_z[m])]
             if len(data_z[m]) > 0 else np.full((*yield_cdf_lut.shape[:-1],0), 0.0)
         )
-        max_signal_allowed[i_mass,:] = oim.max_signal_strength_allowed(data_x, confidence_level=0.9)
+        max_signal_allowed[i_mass,:] = oim.max_signal_strength_allowed(data_x, confidence_level=confidence_level)
 
     return ExclusionEstimateResult(
         mass = mass,
@@ -77,7 +78,8 @@ def exclusion_estimate(*,
     mean_energy_GeV_by_mass,
     data_z,
     simp_parameters = {},
-    signal_yield_calculator = None
+    signal_yield_calculator = None,
+    **kwargs
 ):
     total_prompt_signal_yield_per_eps2 =  production.from_calculators(
         production.radiative_fraction.alic_2016_simps,
@@ -106,6 +108,7 @@ def exclusion_estimate(*,
         z = z,
         diff_yield = diff_yield,
         data_z = data_z,
-        eff = eff
+        eff = eff,
+        **kwargs
     )
 
